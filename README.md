@@ -3,7 +3,7 @@
 Scala implementation of SHACL.
 
 This project contains an implementation of
-[SHACL](http://w3c.github.io/data-shapes/shacl/) 
+[SHACL](http://w3c.github.io/data-shapes/shacl/).
 
 [![Build Status](https://travis-ci.org/weso/shacl-s.svg?branch=master)](https://travis-ci.org/weso/shacl-s)
 

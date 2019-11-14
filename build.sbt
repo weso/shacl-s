@@ -116,7 +116,7 @@ lazy val shacl = project
   lazy val typing = project
   .in(file("modules/typing"))
   .disablePlugins(RevolverPlugin)
-  .settings(commonSettings, publishSettings)
+  .settings(commonSettings, noPublishSettings)
   .settings(
     libraryDependencies ++= Seq(
       catsCore,
@@ -128,7 +128,7 @@ lazy val shacl = project
 lazy val sutils = project
   .in(file("modules/sutils"))
   .disablePlugins(RevolverPlugin)
-  .settings(commonSettings, publishSettings)
+  .settings(commonSettings, noPublishSettings)
   .settings(
     libraryDependencies ++= Seq(
 //      eff,
@@ -148,7 +148,7 @@ lazy val sutils = project
 lazy val utilsTest = project
   .in(file("modules/utilsTest"))
   .disablePlugins(RevolverPlugin)
-  .settings(commonSettings, publishSettings)
+  .settings(commonSettings, noPublishSettings)
   .settings(
     libraryDependencies ++= Seq(
       circeCore,
@@ -169,7 +169,7 @@ lazy val validating = project
   .in(file("modules/validating"))
   .disablePlugins(RevolverPlugin)
   .dependsOn(sutils % "test -> test; compile -> compile")
-  .settings(commonSettings, publishSettings)
+  .settings(commonSettings, noPublishSettings)
   .settings(
     libraryDependencies ++= Seq(
       srdf, 
