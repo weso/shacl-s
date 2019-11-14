@@ -1,5 +1,6 @@
 // Local dependencies
 lazy val srdfVersion           = "0.1.38"
+lazy val sutilsVersion         = "0.1.44"
 
 // Dependency versions
 lazy val antlrVersion          = "4.7.1"
@@ -48,7 +49,10 @@ lazy val rdf4j_runtime     = "org.eclipse.rdf4j"          % "rdf4j-runtime"     
 lazy val srdf              = "es.weso"                    % "srdf_2.13"            % srdfVersion
 lazy val srdfJena          = "es.weso"                    % "srdfjena_2.13"        % srdfVersion
 lazy val srdf4j            = "es.weso"                    % "srdf4j_2.13"          % srdfVersion
-lazy val utils             = "es.weso"                     % "utils_2.13"          % srdfVersion
+lazy val utils             = "es.weso"                    % "utils_2.13"           % srdfVersion
+lazy val typing            = "es.weso"                    % "typing_2.13"          % sutilsVersion
+lazy val validating        = "es.weso"                    % "validating_2.13"      % sutilsVersion
+lazy val sutils            = "es.weso"                    % "sutils_2.13"          % sutilsVersion
 
 lazy val scalaLogging      = "com.typesafe.scala-logging" %% "scala-logging"       % loggingVersion
 lazy val scallop           = "org.rogach"                 %% "scallop"             % scallopVersion
@@ -73,8 +77,8 @@ lazy val shacl_s = project
 //    buildInfoPackage := "es.weso.shaclex.buildinfo" 
 //  )
   .settings(commonSettings, packagingSettings, publishSettings, ghPagesSettings, wixSettings)
-  .aggregate(shacl,sutils,validating,typing)
-  .dependsOn(shacl,sutils,validating,typing)
+  .aggregate(shacl)
+  .dependsOn(shacl)
   .settings(
     unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(noDocProjects: _*),
     libraryDependencies ++= Seq(
@@ -93,10 +97,7 @@ lazy val shacl = project
   .in(file("modules/shacl"))
   .disablePlugins(RevolverPlugin)
   .settings(commonSettings, publishSettings)
-  .dependsOn(
-    sutils,
-    typing,
-    validating)
+  .dependsOn()
   .settings(
     logBuffered in Test       := false,
     parallelExecution in Test := false,
@@ -105,44 +106,15 @@ lazy val shacl = project
       typesafeConfig % Test,
       catsCore,
       sext,
+      sutils,
+      typing,
+      validating,
       catsKernel,
       catsMacros, 
       srdf,
       srdf4j % Test,
       srdfJena % Test
       )
-  )
-
-  lazy val typing = project
-  .in(file("modules/typing"))
-  .disablePlugins(RevolverPlugin)
-  .settings(commonSettings, noPublishSettings)
-  .settings(
-    libraryDependencies ++= Seq(
-      catsCore,
-      catsKernel,
-      catsMacros
-    )
-  )
-
-lazy val sutils = project
-  .in(file("modules/sutils"))
-  .disablePlugins(RevolverPlugin)
-  .settings(commonSettings, noPublishSettings)
-  .settings(
-    libraryDependencies ++= Seq(
-//      eff,
-      utils,  
-      circeCore,
-      circeGeneric,
-      circeParser,
-      catsCore,
-      catsKernel,
-      catsMacros,
-      diffsonCirce,
-      xercesImpl,
-      commonsText
-    )
   )
 
 lazy val utilsTest = project
@@ -164,34 +136,18 @@ lazy val utilsTest = project
     )
   )
 
-
-lazy val validating = project
-  .in(file("modules/validating"))
-  .disablePlugins(RevolverPlugin)
-  .dependsOn(sutils % "test -> test; compile -> compile")
-  .settings(commonSettings, noPublishSettings)
-  .settings(
-    libraryDependencies ++= Seq(
-      srdf, 
-      srdfJena % Test,
-      catsCore,
-      catsKernel,
-      catsMacros
-    )
-  )
-
 /* ********************************************************
  ******************** Grouped Settings ********************
  **********************************************************/
 
 lazy val noDocProjects = Seq[ProjectReference](
-  validating
 )
 
 lazy val noPublishSettings = Seq(
 //  publish := (),
 //  publishLocal := (),
-  publishArtifact := false
+  publishArtifact := false,
+  licenses        := Seq("MIT" -> url("http://opensource.org/licenses/MIT"))
 )
 
 lazy val sharedDependencies = Seq(
