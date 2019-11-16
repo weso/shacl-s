@@ -1,6 +1,6 @@
 // Local dependencies
 lazy val srdfVersion           = "0.1.38"
-lazy val sutilsVersion         = "0.1.44"
+lazy val utilsVersion          = "0.1.50"
 
 // Dependency versions
 lazy val antlrVersion          = "4.7.1"
@@ -49,10 +49,10 @@ lazy val rdf4j_runtime     = "org.eclipse.rdf4j"          % "rdf4j-runtime"     
 lazy val srdf              = "es.weso"                    % "srdf_2.13"            % srdfVersion
 lazy val srdfJena          = "es.weso"                    % "srdfjena_2.13"        % srdfVersion
 lazy val srdf4j            = "es.weso"                    % "srdf4j_2.13"          % srdfVersion
-lazy val utils             = "es.weso"                    % "utils_2.13"           % srdfVersion
-lazy val typing            = "es.weso"                    % "typing_2.13"          % sutilsVersion
-lazy val validating        = "es.weso"                    % "validating_2.13"      % sutilsVersion
-lazy val sutils            = "es.weso"                    % "sutils_2.13"          % sutilsVersion
+lazy val utils             = "es.weso"                    % "utils_2.13"           % utilsVersion
+lazy val typing            = "es.weso"                    % "typing_2.13"          % utilsVersion
+lazy val validating        = "es.weso"                    % "validating_2.13"      % utilsVersion
+lazy val sutils            = "es.weso"                    % "sutils_2.13"          % utilsVersion
 
 lazy val scalaLogging      = "com.typesafe.scala-logging" %% "scala-logging"       % loggingVersion
 lazy val scallop           = "org.rogach"                 %% "scallop"             % scallopVersion
@@ -107,6 +107,7 @@ lazy val shacl = project
       catsCore,
       sext,
       sutils,
+      utils,
       typing,
       validating,
       catsKernel,
