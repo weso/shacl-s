@@ -9,6 +9,7 @@ import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.nodes._
 import es.weso.shacl.{MessageMap, Shape, RefNode}
 import es.weso.shacl.report.{Severity, ValidationResult}
+import es.weso.utils.internal.CollectionCompat._
 // import es.weso.shacl.validator.ShapeTyping._
 // import es.weso.typing.Typing
 

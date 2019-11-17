@@ -3,8 +3,8 @@ lazy val scala213 = "2.13.0"
 lazy val supportedScalaVersions = List(scala212, scala213)
 
 // Local dependencies
-lazy val srdfVersion           = "0.1.41"
-lazy val utilsVersion          = "0.1.55"
+lazy val srdfVersion           = "0.1.43"
+lazy val utilsVersion          = "0.1.56"
 
 // Dependency versions
 lazy val antlrVersion          = "4.7.1"
@@ -50,13 +50,12 @@ lazy val logbackClassic    = "ch.qos.logback"             % "logback-classic"   
 lazy val jenaArq           = "org.apache.jena"            % "jena-arq"             % jenaVersion
 lazy val jenaFuseki        = "org.apache.jena"            % "jena-fuseki-main"     % jenaVersion
 lazy val rdf4j_runtime     = "org.eclipse.rdf4j"          % "rdf4j-runtime"        % rdf4jVersion
-lazy val srdf              = "es.weso"                    % "srdf_2.13"            % srdfVersion
-lazy val srdfJena          = "es.weso"                    % "srdfjena_2.13"        % srdfVersion
-lazy val srdf4j            = "es.weso"                    % "srdf4j_2.13"          % srdfVersion
-lazy val utils             = "es.weso"                    % "utils_2.13"           % utilsVersion
-lazy val typing            = "es.weso"                    % "typing_2.13"          % utilsVersion
-lazy val validating        = "es.weso"                    % "validating_2.13"      % utilsVersion
-lazy val sutils            = "es.weso"                    % "sutils_2.13"          % utilsVersion
+lazy val srdf              = "es.weso"                    %% "srdf"            % srdfVersion
+lazy val srdfJena          = "es.weso"                    %% "srdfjena"        % srdfVersion
+lazy val srdf4j            = "es.weso"                    %% "srdf4j"          % srdfVersion
+lazy val utils             = "es.weso"                    %% "utils"           % utilsVersion
+lazy val typing            = "es.weso"                    %% "typing"          % utilsVersion
+lazy val validating        = "es.weso"                    %% "validating"      % utilsVersion
 
 lazy val scalaLogging      = "com.typesafe.scala-logging" %% "scala-logging"       % loggingVersion
 lazy val scallop           = "org.rogach"                 %% "scallop"             % scallopVersion
@@ -93,7 +92,9 @@ lazy val shacl_s = project
     ),
     cancelable in Global      := true,
     fork                      := true,
-    parallelExecution in Test := false,
+//    parallelExecution in Test := false,
+    crossScalaVersions := Nil,
+    publish / skip := true,
     ThisBuild / turbo := true
   )
 
@@ -106,11 +107,11 @@ lazy val shacl = project
     logBuffered in Test       := false,
     parallelExecution in Test := false,
     fork in Test              := true,
+    crossScalaVersions := supportedScalaVersions,
     libraryDependencies ++= Seq(
       typesafeConfig % Test,
       catsCore,
       sext,
-      sutils,
       utils,
       typing,
       validating,
@@ -127,6 +128,7 @@ lazy val utilsTest = project
   .disablePlugins(RevolverPlugin)
   .settings(commonSettings, noPublishSettings)
   .settings(
+    crossScalaVersions := supportedScalaVersions,
     libraryDependencies ++= Seq(
       circeCore,
       circeGeneric,
@@ -187,7 +189,7 @@ lazy val compilationSettings = Seq(
     "-Ywarn-dead-code",                  // Warn when dead code is identified.
     "-Xfatal-warnings",
     "-Ywarn-extra-implicit",             // Warn when more than one implicit parameter section is defined.
-    "-Ymacro-annotations"
+//    "-Ymacro-annotations"
   )
   // format: on
 )

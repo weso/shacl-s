@@ -5,6 +5,7 @@ import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf._
 import es.weso.checking.CheckerCats
+import es.weso.utils.internal.CollectionCompat._
 import es.weso.shacl.report.AbstractResult
 // import es.weso.utils.MyLogging
 

@@ -15,6 +15,7 @@ import es.weso.shacl.report.{AbstractResult, MsgError, Severity, ValidationResul
 import es.weso.shacl.report.ValidationResult._
 import es.weso.rdf.operations.Comparisons._
 import es.weso.rdf.triples.RDFTriple
+import es.weso.utils.internal.CollectionCompat._
 
 /**
  * This validator is implemented directly in Scala using cats library
@@ -42,7 +43,7 @@ case class Validator(schema: Schema) extends LazyLogging {
    * Fails if any of them is not correct
    */
   def checkSchemaAll: CheckTyping = {
-    val shapes = schema.shapes.to(LazyList)
+    val shapes = schema.shapes.toList.toLazyList
     checkAllTyping(shapes, shapeChecker)
   }
 
@@ -65,7 +66,7 @@ case class Validator(schema: Schema) extends LazyLogging {
     for {
       // rdf <- getRDF
       _ <- addLogMsg(s"Checking targetNode declarations for shape ${shape.showId}. Nodes: ${nodes}")
-      r <- checkAllTyping(nodes.to(LazyList), chk)
+      r <- checkAllTyping(nodes.toLazyList, chk)
     } yield {
       r
     }
@@ -78,7 +79,7 @@ case class Validator(schema: Schema) extends LazyLogging {
       rdf <- getRDF
       nss <- sequence(classes.map(findNodesInClass(_, rdf)).toList)
       nodes = nss.flatten
-      r <- checkAllTyping(nodes.to(LazyList), chk)
+      r <- checkAllTyping(nodes.toLazyList, chk)
     } yield r
   }
 
@@ -93,7 +94,7 @@ case class Validator(schema: Schema) extends LazyLogging {
       rdf <- getRDF
       ts <- sequence(preds.map(getTriplesWithPredicate(_,rdf)).toList)
       subjects = ts.flatten.map(_.subj)
-      r <- checkAllTyping(subjects.to(LazyList), chk)
+      r <- checkAllTyping(subjects.toLazyList, chk)
     } yield r
   }
 
@@ -103,7 +104,7 @@ case class Validator(schema: Schema) extends LazyLogging {
       rdf <- getRDF
       ts <- sequence(preds.map(getTriplesWithPredicate(_,rdf)).toList)
       objects = ts.flatten.map(_.obj)
-      r <- checkAllTyping(objects.to(LazyList),chk)
+      r <- checkAllTyping(objects.toLazyList,chk)
     } yield r
   }
 
@@ -153,8 +154,8 @@ case class Validator(schema: Schema) extends LazyLogging {
       val cs      = ps.components
       val pss     = ps.propertyShapes.toList
       for {
-        r1 <- runLocal(checkAllWithTyping(cs.to(LazyList), component2PropertyChecker(ps)(attempt, path)), _.addType(node, ps))
-        r2 <- runLocal(checkAllWithTyping(pss.to(LazyList), checkPropertyShapePath(path)(attempt)(node)), _.addType(node, ps))
+        r1 <- runLocal(checkAllWithTyping(cs.toLazyList, component2PropertyChecker(ps)(attempt, path)), _.addType(node, ps))
+        r2 <- runLocal(checkAllWithTyping(pss.toLazyList, checkPropertyShapePath(path)(attempt)(node)), _.addType(node, ps))
       } yield {
         val r = combineResults(r1, r2)
         logger.debug(s"Result of node $node - PropertyShape ${ps.showId}: ${showResult(r)}")
@@ -217,7 +218,7 @@ case class Validator(schema: Schema) extends LazyLogging {
       os <- fromEither(rdf.objectsWithPath(node, path).leftMap(MsgError(_)))
       // _ <- debug(s"checkPropertyShapePath: os=$os\nnode: $node, path=${path.show}")
       shape <- getShapeRef(sref,attempt,node)
-      r <- checkAllWithTyping(os.to(LazyList),(o: RDFNode) => {
+      r <- checkAllWithTyping(os.toLazyList,(o: RDFNode) => {
         val newAttempt = Attempt(o, sref, shape.message, getSeverity(shape), Some(path))
         checkPropertyShape(newAttempt)(o)(ps)
       })
@@ -228,7 +229,7 @@ case class Validator(schema: Schema) extends LazyLogging {
     logger.debug(s"Check propertyShapes($node, ${shapeRefs.map(_.showId).mkString(",")})")
     for {
       pss <- getPropertyShapeRefs(shapeRefs, attempt, node)
-      r <- checkAllWithTyping(pss.to(LazyList), checkPropertyShape(attempt)(node))
+      r <- checkAllWithTyping(pss.toLazyList, checkPropertyShape(attempt)(node))
     } yield {
       logger.debug(s"Result of check propertyShapes($node, ${shapeRefs.map(_.showId).mkString(",")})=${showResult(r)}")
       r
@@ -238,7 +239,7 @@ case class Validator(schema: Schema) extends LazyLogging {
 
   private def checkComponents(cs: List[Component]): NodeChecker = attempt => node => {
     logger.debug(s"chechComponents($node,...)")
-    checkAllWithTyping(cs.to(LazyList), (c: Component) => checkComponent(c)(attempt)(node))
+    checkAllWithTyping(cs.toLazyList, (c: Component) => checkComponent(c)(attempt)(node))
   }
 
 
@@ -541,7 +542,7 @@ case class Validator(schema: Schema) extends LazyLogging {
   private def and(srefs: Seq[RefNode]): NodeChecker = attempt => node => {
     for {
       shapes <- getShapeRefs(srefs.toList, attempt, node)
-      r <- checkAllWithTyping(shapes.to(LazyList), (s: Shape) => nodeShape(node,s))
+      r <- checkAllWithTyping(shapes.toLazyList, (s: Shape) => nodeShape(node,s))
     } yield r
   }
 
@@ -553,7 +554,7 @@ case class Validator(schema: Schema) extends LazyLogging {
     for {
       t <- getTyping
       // shapes <- getShapeRefs(sRefs.toList, attempt, node)
-      r <- checkSomeFlagCount(sRefs.to(LazyList), (s: RefNode) => nodeShapeRef(node,s,attempt),t)
+      r <- checkSomeFlagCount(sRefs.toLazyList, (s: RefNode) => nodeShapeRef(node,s,attempt),t)
       count = r._2
       t1 <- condition(count == 1,
         attempt,
@@ -581,7 +582,7 @@ case class Validator(schema: Schema) extends LazyLogging {
       vs <- if (disjoint) filterConformSiblings(values, p, attempt)
             else ok(values)
       // cs: List[Check[ShapeTyping]] = vs.toList.map(o => nodeShapeRef(o, shape, attempt))
-      r <- checkSomeFlagCount(vs.to(LazyList), (n: RDFNode) => nodeShapeRef(n, shape, attempt), t)
+      r <- checkSomeFlagCount(vs.toLazyList, (n: RDFNode) => nodeShapeRef(n, shape, attempt), t)
       value = r._2
       t <- {
         condition(between(value, min, max), attempt,
@@ -629,7 +630,7 @@ case class Validator(schema: Schema) extends LazyLogging {
   private def or(sRefs: Seq[RefNode]): NodeChecker = attempt => node => {
     val last: CheckTyping = fail(s"None of the components of or pass")
     def fn(sref: RefNode): CheckTyping = nodeShapeRef(node, sref, attempt)
-    checkSomeFlag(sRefs.to(LazyList),fn,last)
+    checkSomeFlag(sRefs.toLazyList,fn,last)
   }
 
   private def not(sref: RefNode): NodeChecker = attempt => node => {
@@ -735,7 +736,7 @@ case class Validator(schema: Schema) extends LazyLogging {
          s"equals(${equalsIri.show}. nodes ${os.show} pass equals condition with values ${values.show}")
       } yield (t,true)
 
-      case Right(ls) => checkAllWithTyping(ls.to(LazyList), (n: RDFNode) => for {
+      case Right(ls) => checkAllWithTyping(ls.toLazyList, (n: RDFNode) => for {
        t <- addNotEvidence(attempt, equalsError(n,attempt,equalsIri,Set()),s"node $n fails equals condition. ")
       } yield (t, false))
     }

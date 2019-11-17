@@ -6,6 +6,7 @@ This project contains an implementation of
 [SHACL](http://w3c.github.io/data-shapes/shacl/).
 
 [![Build Status](https://travis-ci.org/weso/shacl-s.svg?branch=master)](https://travis-ci.org/weso/shacl-s)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/da1290bfb5ea4f4e9dbf4074960d06c3)](https://www.codacy.com/gh/weso/shacl-s?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=weso/shacl-s&amp;utm_campaign=Badge_Grade)
 
 ## Introduction
 
