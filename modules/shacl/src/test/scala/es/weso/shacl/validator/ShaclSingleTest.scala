@@ -13,6 +13,8 @@ import org.scalatest._
 
 import scala.collection.mutable
 import scala.util._
+import cats.data.EitherT
+import cats.effect._
 
 class ShaclSingleTest extends FunSpec with Matchers with TryValues with OptionValues with SchemaMatchers {
 
@@ -27,7 +29,7 @@ class ShaclSingleTest extends FunSpec with Matchers with TryValues with OptionVa
 
   describe(s"Validate from manifest file $fileName") {
     println(s"SHACLFolderURI=$shaclFolderURI")
-    RDF2Manifest.read(fileName, "TURTLE", Some(shaclFolderURI), true) match {
+    RDF2Manifest.read(fileName, "TURTLE", Some(shaclFolderURI), true).value.unsafeRunSync match {
       case Left(e) => {
         it(s"Fails to read $fileName") {
           fail(s"Error reading manifestTest file:$e")
@@ -55,7 +57,7 @@ class ShaclSingleTest extends FunSpec with Matchers with TryValues with OptionVa
   def processEntry(e: manifest.Entry, name: String, parentFolder: String): Unit = {
     println(s"processEntry: $name\nEntry: ${e}\n---")
     it(s"Should check entry ${e.node.getLexicalForm} with $parentFolder") {
-      getSchemaRdf(e.action, name, parentFolder) match {
+      getSchemaRdf(e.action, name, parentFolder).value.unsafeRunSync match {
         case Left(f) => {
           failed.push(name)
           fail(s"Error processing Entry: $e \n $f")
@@ -68,7 +70,8 @@ class ShaclSingleTest extends FunSpec with Matchers with TryValues with OptionVa
     }
   }
 
-  def getSchemaRdf(a: ManifestAction, fileName: String, parentFolder: String): Either[String, (Schema, RDFReader)] = {
+  def getSchemaRdf(a: ManifestAction, fileName: String, parentFolder: String): 
+    EitherT[IO, String, (Schema, RDFReader)] = {
     println(s"GetSchema RDF...fileName: $fileName\nAbsoluteIRI: $absoluteIri")
     // info(s"Manifest action $a, fileName $fileName, parent: $parentFolder")
     val parentIri = absoluteIri.resolve(IRI(fileName))
@@ -78,7 +81,7 @@ class ShaclSingleTest extends FunSpec with Matchers with TryValues with OptionVa
     (a.data,a.schema) match {
       case (None,None) => {
         info(s"No data in manifestAction $a")
-        Right((Schema.empty, RDFAsJenaModel.empty))
+        EitherT.pure[IO,String]((Schema.empty, RDFAsJenaModel.empty))
       }
       case (Some(dataIri), Some(shapesIri)) => {
         val realDataIri = if (dataIri.isEmpty) {
@@ -97,10 +100,10 @@ class ShaclSingleTest extends FunSpec with Matchers with TryValues with OptionVa
           parentIri.resolve(shapesIri)
         }
         for {
-          rdf <- RDFAsJenaModel.fromURI(realDataIri.str, dataFormat)
-          schemaRdf <- RDFAsJenaModel.fromURI(realSchemaIri.str, dataFormat)
+          rdf <- RDFAsJenaModel.fromURIIO(realDataIri.str, dataFormat)
+          schemaRdf <- RDFAsJenaModel.fromURIIO(realSchemaIri.str, dataFormat)
           schema <- RDF2Shacl.getShacl(schemaRdf)
-          _ <- { println(s"schemaRDF: ${schemaRdf.serialize("TURTLE").getOrElse("")}\n---\nSchema:\n${schema.toString}\n---"); Right(())}
+          // _ <- { println(s"schemaRDF: ${schemaRdf.serialize("TURTLE").getOrElse("")}\n---\nSchema:\n${schema.toString}\n---"); Right(())}
         } yield (schema, rdf)
       }
       case (None, Some(shapesIri)) => {
@@ -110,7 +113,7 @@ class ShaclSingleTest extends FunSpec with Matchers with TryValues with OptionVa
           absoluteIri.resolve(shapesIri)
         }
         for {
-          schemaRdf <- RDFAsJenaModel.fromURI(realSchemaIri.str, dataFormat)
+          schemaRdf <- RDFAsJenaModel.fromURIIO(realSchemaIri.str, dataFormat)
           schema <- {
             RDF2Shacl.getShacl(schemaRdf)
           }
@@ -123,7 +126,7 @@ class ShaclSingleTest extends FunSpec with Matchers with TryValues with OptionVa
           absoluteIri.resolve(dataIri)
         }
         for {
-          rdf <- RDFAsJenaModel.fromURI(realDataIri.str, dataFormat)
+          rdf <- RDFAsJenaModel.fromURIIO(realDataIri.str, dataFormat)
           schema <- {
             RDF2Shacl.getShacl(rdf)
           }

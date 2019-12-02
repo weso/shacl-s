@@ -10,6 +10,9 @@ import es.weso.shacl.converter.RDF2Shacl
 import es.weso.shacl.manifest.{Manifest, ManifestAction, Result => ManifestResult, _}
 import es.weso.shacl.{Schema, SchemaMatchers, Shacl, manifest}
 import org.scalatest._
+import cats.data.EitherT
+import cats.effect._
+
 
 import scala.util._
 
@@ -26,7 +29,7 @@ class ShaclCoreTest extends FunSpec with Matchers with TryValues with OptionValu
   def describeManifest(name: IRI, parentFolder: Path): Unit = {
     describe(s"Validate from manifest file $name with parent: $parentFolder (lexicalForm: ${name.getLexicalForm}") {
       val fileName = Paths.get(parentFolder.toUri.resolve(name.uri)).toString
-      RDF2Manifest.read(fileName, "TURTLE", Some(fileName), true) match {
+      RDF2Manifest.read(fileName, "TURTLE", Some(fileName), true).value.unsafeRunSync match {
         case Left(e) => {
           it(s"Fails to read $fileName") {
             fail(s"Error reading manifestTest file:$e")
@@ -57,7 +60,7 @@ class ShaclCoreTest extends FunSpec with Matchers with TryValues with OptionValu
 
   def processEntry(e: manifest.Entry, name: String, parentFolder: Path, rdfManifest: RDFBuilder): Unit = {
     it(s"Should check entry ${e.node.getLexicalForm} with $parentFolder") {
-      getSchemaRdf(e.action, name, parentFolder,rdfManifest) match {
+      getSchemaRdf(e.action, name, parentFolder,rdfManifest).value.unsafeRunSync match {
         case Left(f) => {
           fail(s"Error processing Entry: $e \n $f")
         }
@@ -68,7 +71,7 @@ class ShaclCoreTest extends FunSpec with Matchers with TryValues with OptionValu
     }
   }
 
-  def getSchemaRdf(a: ManifestAction, fileName: String, parentFolder: Path, manifestRdf: RDFBuilder): Either[String, (Schema,RDFReader)] = for {
+  def getSchemaRdf(a: ManifestAction, fileName: String, parentFolder: Path, manifestRdf: RDFBuilder): EitherT[IO, String, (Schema,RDFReader)] = for {
     pair  <- getSchema(a,fileName,parentFolder,manifestRdf)
     (schema,schemaRdf) = pair
     dataRdf <- getData(a,fileName,parentFolder,manifestRdf,schemaRdf)
@@ -79,27 +82,27 @@ class ShaclCoreTest extends FunSpec with Matchers with TryValues with OptionValu
               parentFolder: Path,
               manifestRdf: RDFReader,
               schemaRdf: RDFReader
-             ): Either[String, RDFReader] = {
+             ): EitherT[IO, String, RDFReader] = {
     println(s"####\nGet data: ${a.data}")
      a.data match {
-     case None   => Right(RDFAsJenaModel.empty)
-     case Some(iri) if iri.isEmpty => Right(manifestRdf)
+     case None   => EitherT.pure[IO,String](RDFAsJenaModel.empty)
+     case Some(iri) if iri.isEmpty => EitherT.pure[IO,String](manifestRdf)
      case Some(iri) => {
       val dataFileName = Paths.get(parentFolder.toUri.resolve(iri.uri)).toFile
       val dataFormat  = a.dataFormat.getOrElse(Shacl.defaultFormat)
       for {
-        rdf <- RDFAsJenaModel.fromFile(dataFileName, dataFormat).map(_.normalizeBNodes)
+        rdf <- RDFAsJenaModel.fromFileIO(dataFileName, dataFormat).map(_.normalizeBNodes)
       } yield rdf
      }
     }
   }
 
-  def getSchema(a: ManifestAction, fileName: String, parentFolder: Path, manifestRdf: RDFBuilder): Either[String, (Schema, RDFReader)] = {
+  def getSchema(a: ManifestAction, fileName: String, parentFolder: Path, manifestRdf: RDFBuilder): EitherT[IO, String, (Schema, RDFReader)] = {
     info(s"Manifest action $a, fileName $fileName, parent: $parentFolder }")
     a.schema match {
       case None => {
         info(s"No data in manifestAction $a")
-        Right((Schema.empty, RDFAsJenaModel.empty))
+        EitherT.pure[IO,String]((Schema.empty, RDFAsJenaModel.empty))
       }
       case Some(iri) if iri.isEmpty => for {
         schema <- RDF2Shacl.getShacl(manifestRdf)
@@ -108,10 +111,8 @@ class ShaclCoreTest extends FunSpec with Matchers with TryValues with OptionValu
         val schemaFile = Paths.get(parentFolder.toUri.resolve(iri.uri)).toFile
         val schemaFormat = a.dataFormat.getOrElse(Shacl.defaultFormat)
         for {
-          schemaRdf <- RDFAsJenaModel.fromFile(schemaFile, schemaFormat).map(_.normalizeBNodes)
-          schema <- {
-            RDF2Shacl.getShacl(schemaRdf)
-          }
+          schemaRdf <- RDFAsJenaModel.fromFileIO(schemaFile, schemaFormat).map(_.normalizeBNodes)
+          schema <- RDF2Shacl.getShacl(schemaRdf)
         } yield (schema, schemaRdf)
       }
     }

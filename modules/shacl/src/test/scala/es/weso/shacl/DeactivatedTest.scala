@@ -4,6 +4,8 @@ import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.shacl.converter.RDF2Shacl
 import es.weso.shacl.validator.Validator
 import org.scalatest._
+import cats.data.EitherT
+import cats.effect._
 import cats.implicits._
 
 class DeactivatedTest extends FunSpec with Matchers with TryValues with OptionValues
@@ -33,12 +35,12 @@ class DeactivatedTest extends FunSpec with Matchers with TryValues with OptionVa
             |  """.stripMargin
 
       val r = for {
-        rdf    <- RDFAsJenaModel.fromChars(str, "TURTLE", None)
+        rdf    <- RDFAsJenaModel.fromStringIO(str, "TURTLE", None)
         schema <- RDF2Shacl.getShacl(rdf)
-        result <- Validator.validate(schema, rdf).leftMap(_.toString)
+        result <- EitherT.fromEither[IO](Validator.validate(schema, rdf).leftMap(_.toString))
       } yield result
 
-      r.fold(
+      r.value.unsafeRunSync.fold(
         e => fail(s"Error reading: $e"),
         pair => {
         val (typing, ok) = pair

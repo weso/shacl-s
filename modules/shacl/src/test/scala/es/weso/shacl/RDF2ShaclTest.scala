@@ -5,7 +5,8 @@ import es.weso.rdf.nodes._
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.shacl.converter.RDF2Shacl
 import es.weso.rdf.path._
-import util._
+import cats.effect._
+import cats.data.EitherT
 
 class RDF2ShaclTest extends FunSpec with Matchers with TryValues with EitherValues
   with SchemaMatchers {
@@ -20,13 +21,13 @@ class RDF2ShaclTest extends FunSpec with Matchers with TryValues with EitherValu
                  |
                  |:S a sh:Shape .
                  |""".stripMargin
-      val attempt: Either[String, Schema] = for {
-        rdf <- RDFAsJenaModel.fromChars(str, "TURTLE")
+      val attempt: EitherT[IO,String, Schema] = for {
+        rdf <- RDFAsJenaModel.fromStringIO(str, "TURTLE")
         schema <- RDF2Shacl.getShacl(rdf)
       } yield (schema)
       val s = ex + "S"
       info(s"Attempt: $attempt")
-      attempt match {
+      attempt.value.unsafeRunSync match {
         case Left(e) => fail(s"Failed: $e")
         case Right(v) => v should containShapes(Set(s))
       }
@@ -41,14 +42,14 @@ class RDF2ShaclTest extends FunSpec with Matchers with TryValues with EitherValu
                  |:S a sh:Shape .
                  |:T a sh:Shape .
                  |""".stripMargin
-      val attempt: Either[String, Schema] = for {
-        rdf <- RDFAsJenaModel.fromChars(str, "TURTLE")
+      val attempt: EitherT[IO, String, Schema] = for {
+        rdf <- RDFAsJenaModel.fromStringIO(str, "TURTLE")
         schema <- RDF2Shacl.getShacl(rdf)
       } yield (schema)
       val s = ex + "S"
       val t = ex + "T"
       info(s"Attempt: $attempt")
-      attempt match {
+      attempt.value.unsafeRunSync match {
         case Left(e) => fail(s"Failed: $e")
         case Right(v) => v should containShapes(Set(s, t))
       }
@@ -65,12 +66,12 @@ class RDF2ShaclTest extends FunSpec with Matchers with TryValues with EitherValu
                  |""".stripMargin
       val s = ex + "S"
       val n1 = ex + "n1"
-      val attempt = for {
-        rdf <- RDFAsJenaModel.fromChars(str, "TURTLE")
+      val attempt: EitherT[IO,String,Shape] = for {
+        rdf <- RDFAsJenaModel.fromStringIO(str, "TURTLE")
         schema <- RDF2Shacl.getShacl(rdf)
-        shape <- schema.shape(s)
+        shape <- EitherT.fromEither[IO](schema.shape(s))
       } yield (shape)
-      attempt match {
+      attempt.value.unsafeRunSync match {
         case Left(e) => fail(s"Failed $e")
         case Right(shape) => {
           shape.targetNodes should contain only (n1)
@@ -93,10 +94,10 @@ class RDF2ShaclTest extends FunSpec with Matchers with TryValues with EitherValu
       val s2 = ex + "s2"
       val t1 = ex + "t1"
       val attempt = for {
-        rdf <- RDFAsJenaModel.fromChars(str, "TURTLE")
+        rdf <- RDFAsJenaModel.fromStringIO(str, "TURTLE")
         schema <- RDF2Shacl.getShacl(rdf)
       } yield (schema)
-      attempt match {
+      attempt.value.unsafeRunSync match {
         case Left(e) => fail(s"Failed $e")
         case Right(schema) => {
           schema.targetNodeDeclarations should contain only ((s2, S), (s1, S), (t1, T))
@@ -119,12 +120,12 @@ class RDF2ShaclTest extends FunSpec with Matchers with TryValues with EitherValu
       val S = ex + "S"
       val prop = ex + "prop"
       val attempt = for {
-        rdf <- RDFAsJenaModel.fromChars(str, "TURTLE")
+        rdf <- RDFAsJenaModel.fromStringIO(str, "TURTLE")
         schema <- RDF2Shacl.getShacl(rdf)
-        shape <- schema.shape(S)
+        shape <- EitherT.fromEither[IO](schema.shape(S))
       } yield (shape)
       //val p1 = Shape.emptyPropertyShape(prop, PredicatePath(p)).copy(components = Seq(NodeKind(IRIKind)))
-      attempt match {
+      attempt.value.unsafeRunSync match {
         case Left(e) => fail(s"Failed $e")
         case Right(shape) => {
           shape.propertyShapes should contain only (RefNode(prop))
@@ -151,13 +152,13 @@ class RDF2ShaclTest extends FunSpec with Matchers with TryValues with EitherValu
       val S = ex + "S"
       val p = ex + "p"
       val prop = ex + "prop"
-      val attempt: Either[String, (Shape, Schema)] = for {
-        rdf <- RDFAsJenaModel.fromChars(str, "TURTLE")
+      val attempt: EitherT[IO, String, (Shape, Schema)] = for {
+        rdf <- RDFAsJenaModel.fromStringIO(str, "TURTLE")
         schema <- RDF2Shacl.getShacl(rdf)
-        shape <- schema.shape(S)
+        shape <- EitherT.fromEither[IO](schema.shape(S))
       } yield ((shape, schema))
 
-      attempt match {
+      attempt.value.unsafeRunSync match {
         case Left(e) => fail(s"Failed $e")
         case Right((shape, schema)) => {
           shape.propertyShapes.length should be(1)
@@ -189,11 +190,11 @@ class RDF2ShaclTest extends FunSpec with Matchers with TryValues with EitherValu
       val p = IRI(ex) + "p"
       val prop = IRI(ex) + "prop"
       val attempt = for {
-        rdf <- RDFAsJenaModel.fromChars(str, "TURTLE")
+        rdf <- RDFAsJenaModel.fromStringIO(str, "TURTLE")
         schema <- RDF2Shacl.getShacl(rdf)
-        shape <- schema.shape(S)
+        shape <- EitherT.fromEither[IO](schema.shape(S))
       } yield (shape, schema)
-      attempt match {
+      attempt.value.unsafeRunSync match {
         case Left(e) => fail(s"Failed $e")
         case Right((shape, schema)) => {
           shape.propertyShapes.length should be(1)
@@ -225,11 +226,11 @@ class RDF2ShaclTest extends FunSpec with Matchers with TryValues with EitherValu
       val p = IRI(ex) + "p"
       val prop = IRI(ex) + "prop"
       val attempt = for {
-        rdf <- RDFAsJenaModel.fromChars(str, "TURTLE")
+        rdf <- RDFAsJenaModel.fromStringIO(str, "TURTLE")
         schema <- RDF2Shacl.getShacl(rdf)
-        shape <- schema.shape(S)
+        shape <- EitherT.fromEither[IO](schema.shape(S))
       } yield ((shape, schema))
-      attempt match {
+      attempt.value.unsafeRunSync match {
         case Left(e) => fail(s"Error parsing $e")
         case Right((shape, schema)) => {
           val ip = InversePath(PredicatePath(p))
@@ -262,13 +263,13 @@ class RDF2ShaclTest extends FunSpec with Matchers with TryValues with EitherValu
       val S = ex + "S"
       val prop = ex + "prop"
       val attempt = for {
-        rdf <- RDFAsJenaModel.fromChars(str, "TURTLE")
+        rdf <- RDFAsJenaModel.fromStringIO(str, "TURTLE")
         schema <- RDF2Shacl.getShacl(rdf)
-        shape <- schema.shape(S)
-        propShape <- schema.shape(prop)
+        shape <- EitherT.fromEither[IO](schema.shape(S))
+        propShape <- EitherT.fromEither[IO](schema.shape(prop))
       } yield ((shape, propShape))
       //val p1 = Shape.emptyPropertyShape(prop, PredicatePath(p)).copy(components = Seq(NodeKind(IRIKind)))
-      attempt match {
+      attempt.value.unsafeRunSync match {
         case Left(e) => fail(s"Failed $e")
         case Right((shape,propShape)) => {
           shape.propertyShapes should contain only (RefNode(prop))

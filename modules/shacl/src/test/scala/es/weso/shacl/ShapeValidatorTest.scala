@@ -6,6 +6,8 @@ import es.weso.rdf.jena.RDFAsJenaModel
 import util._
 import es.weso.shacl.converter.RDF2Shacl
 import es.weso.shacl.validator.Validator
+import cats.data.EitherT
+import cats.effect._
 import cats.implicits._
 
 class ShapeValidatorTest extends FunSpec with Matchers with TryValues with EitherValues {
@@ -25,13 +27,13 @@ class ShapeValidatorTest extends FunSpec with Matchers with TryValues with Eithe
                  |:x :p 23; :q "xx" .
                  |""".stripMargin
       val attempt = for {
-        rdf <- RDFAsJenaModel.fromChars(str, "TURTLE")
+        rdf <- RDFAsJenaModel.fromStringIO(str, "TURTLE")
         schema <- RDF2Shacl.getShacl(rdf)
-        shape <- schema.shape(s)
+        shape <- EitherT.fromEither[IO](schema.shape(s))
         validator = Validator(schema)
-        result <- Validator.validate(schema, rdf).leftMap(_.toString)
+        result <- EitherT.fromEither[IO](Validator.validate(schema, rdf).leftMap(_.toString))
       } yield (Validator(schema).showResult(result))
-      attempt match {
+      attempt.value.unsafeRunSync match {
         case Right(result) => {
           info(s"${result}")
         }

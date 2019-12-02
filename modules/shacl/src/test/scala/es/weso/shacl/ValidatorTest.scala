@@ -23,10 +23,10 @@ class ValidatorTest extends FunSpec with Matchers with TryValues with OptionValu
                  |:T a sh:Shape; sh:targetNode :z .
                  |""".stripMargin
       val attempt = for {
-        rdf <- RDFAsJenaModel.fromChars(str, "TURTLE")
+        rdf <- RDFAsJenaModel.fromStringIO(str, "TURTLE")
         schema <- RDF2Shacl.getShacl(rdf)
       } yield (rdf, schema)
-      attempt match {
+      attempt.value.unsafeRunSync match {
         case Left(e) => fail(s"Error: $e")
         case Right((rdf,schema)) => {
           val S = ex + "S"
@@ -61,10 +61,10 @@ class ValidatorTest extends FunSpec with Matchers with TryValues with OptionValu
                  |:bad1 :q 1 .
                  |""".stripMargin
       val attempt = for {
-        rdf <- RDFAsJenaModel.fromChars(str, "TURTLE")
+        rdf <- RDFAsJenaModel.fromStringIO(str, "TURTLE")
         schema <- RDF2Shacl.getShacl(rdf)
       } yield (rdf, schema)
-      attempt.fold(e => fail(s"Error: $e"),
+      attempt.value.unsafeRunSync.fold(e => fail(s"Error: $e"),
        pair => 
      { 
       val (rdf,schema)=pair

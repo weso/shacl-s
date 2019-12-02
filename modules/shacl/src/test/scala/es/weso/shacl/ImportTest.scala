@@ -7,6 +7,8 @@ import es.weso.rdf.nodes.IRI
 import es.weso.shacl.converter.RDF2Shacl
 import es.weso.shacl.validator.Validator
 import org.scalatest._
+import cats.data.EitherT
+import cats.effect._
 import cats.implicits._
 
 class ImportTest extends FunSpec with Matchers with TryValues with OptionValues
@@ -19,16 +21,16 @@ class ImportTest extends FunSpec with Matchers with TryValues with OptionValues
   describe("import") {
     it(s"Validates a shape that imports another one") {
       val r = for {
-        rdf <- RDFAsJenaModel.fromIRI(shaclFolder + "imports/import.ttl")
+        rdf <- RDFAsJenaModel.fromIRIIO(shaclFolder + "imports/import.ttl")
         //_ <- { println(s"RDF: ${rdf.serialize("TURTLE").getOrElse("<None>")}"); Right(()) } 
         // extendedRdf <- rdf.extendImports()
         // _ <- { println(s"Extended RDF: ${extendedRdf.serialize("TURTLE").getOrElse("<None>")}"); Right(()) } 
         schema <- RDF2Shacl.getShacl(rdf)
         //_ <- { println(s"----\nSchema: ${schema.serialize("TURTLE", None,RDFAsJenaModel.empty)}"); Right(()) } 
-        result <- Validator.validate(schema, rdf).leftMap(ar => s"AbstractResult: $ar")
+        result <- EitherT.fromEither[IO](Validator.validate(schema, rdf).leftMap(ar => s"AbstractResult: $ar"))
       } yield result
 
-      r.fold(
+      r.value.unsafeRunSync.fold(
         e => fail(s"Error reading: $e"),
         pair => {
         val (typing, ok) = pair

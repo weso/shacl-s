@@ -11,9 +11,10 @@ import es.weso.shacl._
 import es.weso.shacl.report._
 import es.weso.utils.EitherUtils._
 // import scala.util.{Failure, Success, Try}
-// import cats._
+import cats.effect._
 import cats.data._
 import cats.implicits._
+import es.weso.rdf.parser._               
 
 object RDF2Shacl extends RDFParser with LazyLogging {
 
@@ -43,9 +44,9 @@ private def ok_s[A](x: A): ShaclParser[A] =
 private def firstOf_s[A](ps: ShaclParser[A]*): ShaclParser[A] = {
   def comb(rest: ShaclParser[A], p: ShaclParser[A]): ShaclParser[A] = 
    p orElse rest
- 
- val zero: ShaclParser[A] = fromRDFParser(parseFail("firstOf: none of the parsers succeeded"))
- ps.foldLeft(zero)(comb)
+
+  val zero: ShaclParser[A] = fromRDFParser(parseFail("firstOf: none of the parsers succeeded"))
+  ps.foldLeft(zero)(comb)
 }
 
 private def removePendingNode: ShaclParser[Option[RDFNode]] = for {
@@ -158,22 +159,32 @@ private def getShaclFromRDFReader(rdf: RDFReader): ShaclParser[Schema] = {
     )
   }
 
+  private def cnv[A](v: IO[Either[String,A]]): EitherT[IO,String,A] = {
+    val r: EitherT[IO,String, Either[String, A]] = EitherT.liftF(v)
+    val s: EitherT[IO,String,A] = r.flatMap(e => e.fold(s => EitherT.leftT[IO,A](s), v => EitherT.pure[IO,String](v)))
+    s
+  }
+  
   /**
    * Parses RDF content and obtains a SHACL Schema and a PrefixMap
    */
   def getShacl(rdf: RDFBuilder,
                resolveImports: Boolean = true
-              ): Either[String, Schema] = {
+              ): EitherT[IO, String, Schema] = {
     for {
-      extendedRdf <- if (resolveImports) rdf.extendImports()
-                     else Right(rdf)
-      schema <- getShaclFromRDFReader(extendedRdf).run(initialState).value.run(Config(initialNode,extendedRdf))
-    } yield schema._2
+      extendedRdf <- if (resolveImports) EitherT.fromEither[IO](rdf.extendImports)
+                     else EitherT.pure[IO,String](rdf)
+      schema <- getShaclReader(extendedRdf)               
+//      pair <- cnv(getShaclFromRDFReader(extendedRdf).run(initialState).value.run(Config(initialNode,extendedRdf)))
+//      (_,schema) = pair
+    } yield schema
   }
 
-  def getShaclReader(rdf: RDFReader): Either[String, Schema] = for {
-   stateSchema <- getShaclFromRDFReader(rdf).run(initialState).value.run(Config(initialNode,rdf))
-  } yield stateSchema._2
+  def getShaclReader(rdf: RDFReader): EitherT[IO,String, Schema] = 
+   for {
+    pair <- cnv(getShaclFromRDFReader(rdf).run(initialState).value.run(Config(initialNode,rdf)))
+    (_,schema) = pair
+   } yield schema
 
   private def shapesMap: ShaclParser[Unit] = 
     for {

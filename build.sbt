@@ -1,10 +1,10 @@
 lazy val scala212 = "2.12.10"
-lazy val scala213 = "2.13.0"
+lazy val scala213 = "2.13.1"
 lazy val supportedScalaVersions = List(scala212, scala213)
 
 // Local dependencies
-lazy val srdfVersion           = "0.1.43"
-lazy val utilsVersion          = "0.1.56"
+lazy val srdfVersion           = "0.1.51"
+lazy val utilsVersion          = "0.1.60"
 
 // Dependency versions
 lazy val antlrVersion          = "4.7.1"
@@ -212,7 +212,9 @@ lazy val commonSettings = compilationSettings ++ sharedDependencies ++ Seq(
     Resolver.bintrayRepo("labra", "maven"),
     Resolver.bintrayRepo("weso", "weso-releases"),
     Resolver.sonatypeRepo("snapshots")
-  )
+  ), 
+  coverageHighlighting := priorTo2_13(scalaVersion.value), 
+  coverageEnabled := priorTo2_13(scalaVersion.value)
 )
 
 def antlrSettings(packageName: String) = Seq(
@@ -248,3 +250,9 @@ lazy val publishSettings = Seq(
   bintrayRepository in bintray   := "weso-releases",
   bintrayOrganization in bintray := Some("weso")
 )
+
+def priorTo2_13(scalaVersion: String): Boolean =
+  CrossVersion.partialVersion(scalaVersion) match {
+    case Some((2, minor)) if minor < 13 => true
+    case _                              => false
+  }

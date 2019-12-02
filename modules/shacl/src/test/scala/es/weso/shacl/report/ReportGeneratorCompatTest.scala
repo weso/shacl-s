@@ -14,8 +14,9 @@ import es.weso.shacl.manifest._
 import es.weso.shacl.validator.Validator
 import org.scalatest.{FunSpec, Matchers}
 import es.weso.shacl.manifest.{Manifest, ManifestAction, Result => ManifestResult, _}
-
-import scala.util.{Either, Left, Right}
+import cats.data.EitherT
+import cats.effect._
+// import scala.util.{Either, Left, Right}
 
 class ReportGeneratorCompatTest extends FunSpec with Matchers with RDFParser {
 
@@ -53,7 +54,7 @@ class ReportGeneratorCompatTest extends FunSpec with Matchers with RDFParser {
   def describeManifest(name: RDFNode, parentFolder: Path): Unit = name match {
     case iri: IRI => {
       val fileName = Paths.get(parentFolder.toUri.resolve(iri.uri)).toString
-      RDF2Manifest.read(fileName, "TURTLE", Some(fileName), false) match {
+      RDF2Manifest.read(fileName, "TURTLE", Some(fileName), false).value.unsafeRunSync match {
         case Left(e) => {
             fail(s"Error reading manifestTest file:$e")
         }
@@ -75,7 +76,7 @@ class ReportGeneratorCompatTest extends FunSpec with Matchers with RDFParser {
   }
 
   def processEntry(e: manifest.Entry, name: String, parentFolder: Path, rdfManifest: RDFBuilder): Unit = {
-    getSchemaRdf(e.action, name, parentFolder, rdfManifest) match {
+    getSchemaRdf(e.action, name, parentFolder, rdfManifest).value.unsafeRunSync match {
         case Left(f) => {
           fail(s"Error processing Entry: $e \n $f")
         }
@@ -90,7 +91,7 @@ class ReportGeneratorCompatTest extends FunSpec with Matchers with RDFParser {
                    fileName: String,
                    parentFolder: Path,
                    manifestRdf: RDFBuilder
-                  ): Either[String, (Schema,RDFReader)] = {
+                  ): EitherT[IO,String, (Schema,RDFReader)] = {
    for {
     pair <- getSchema(a, fileName, parentFolder, manifestRdf)
     (schema, schemaRdf) = pair
@@ -100,16 +101,16 @@ class ReportGeneratorCompatTest extends FunSpec with Matchers with RDFParser {
    }
  }
 
-  def getData(a: ManifestAction, fileName: String, parentFolder: Path, manifestRdf: RDFReader, schemaRdf: RDFReader): Either[String, RDFReader] =
+  def getData(a: ManifestAction, fileName: String, parentFolder: Path, manifestRdf: RDFReader, schemaRdf: RDFReader): EitherT[IO,String, RDFReader] =
   {
     a.data match {
-      case None => Right(RDFAsJenaModel.empty)
-      case Some(iri) if iri.isEmpty => Right(manifestRdf)
+      case None => EitherT.pure[IO,String](RDFAsJenaModel.empty)
+      case Some(iri) if iri.isEmpty => EitherT.pure[IO,String](manifestRdf)
       case Some(iri) => {
         val dataFileName = Paths.get(parentFolder.toUri.resolve(iri.uri)).toFile
         val dataFormat  = a.dataFormat.getOrElse(Shacl.defaultFormat)
         for {
-          rdf <- RDFAsJenaModel.fromFile(dataFileName, dataFormat).map(_.normalizeBNodes)
+          rdf <- RDFAsJenaModel.fromFileIO(dataFileName, dataFormat).map(_.normalizeBNodes)
         } yield rdf
       }
     }
@@ -119,11 +120,11 @@ class ReportGeneratorCompatTest extends FunSpec with Matchers with RDFParser {
                 fileName: String,
                 parentFolder: Path,
                 manifestRdf: RDFBuilder
-               ): Either[String, (Schema, RDFReader)] = {
+               ): EitherT[IO, String, (Schema, RDFReader)] = {
     a.schema match {
       case None => {
         info(s"No data in manifestAction $a")
-        Right((Schema.empty, RDFAsJenaModel.empty))
+        EitherT.pure[IO,String]((Schema.empty, RDFAsJenaModel.empty))
       }
       case Some(iri) if iri.isEmpty => for {
         schema <- RDF2Shacl.getShacl(manifestRdf)
@@ -132,7 +133,7 @@ class ReportGeneratorCompatTest extends FunSpec with Matchers with RDFParser {
         val schemaFile = Paths.get(parentFolder.toUri.resolve(iri.uri)).toFile
         val schemaFormat = a.dataFormat.getOrElse(Shacl.defaultFormat)
         for {
-          schemaRdf <- RDFAsJenaModel.fromFile(schemaFile, schemaFormat).map(_.normalizeBNodes)
+          schemaRdf <- RDFAsJenaModel.fromFileIO(schemaFile, schemaFormat).map(_.normalizeBNodes)
           schema <- {
             RDF2Shacl.getShacl(schemaRdf)
           }

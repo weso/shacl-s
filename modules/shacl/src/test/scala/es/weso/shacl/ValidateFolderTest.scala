@@ -8,6 +8,8 @@ import es.weso.shacl.validator.Validator
 import es.weso.utils.FileUtils._
 import org.scalatest._
 import scala.io.Source
+import cats.data.EitherT
+import cats.effect._
 import cats.implicits._
 
 class ValidateFolderTest
@@ -37,9 +39,9 @@ class ValidateFolderTest
 
   def validate(name: String, str: String): Unit = {
     val attempt = for {
-      rdf <- RDFAsJenaModel.fromChars(str, "TURTLE")
+      rdf <- RDFAsJenaModel.fromStringIO(str, "TURTLE")
       schema <- RDF2Shacl.getShacl(rdf)
-      result <- Validator.validate(schema, rdf).leftMap(_.toString)
+      result <- EitherT.fromEither[IO](Validator.validate(schema, rdf).leftMap(_.toString))
     } yield result
     attempt.fold(e => fail(s"Error validating $name: $e"),
       result => {

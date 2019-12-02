@@ -8,18 +8,30 @@ import es.weso.rdf.parser.RDFParser
 import es.weso.utils.FileUtils._
 import ManifestPrefixes._
 import es.weso.utils.EitherUtils._
+import es.weso.rdf.parser._
+import cats.data.EitherT
+import cats.effect._
 import scala.util._
 import cats.implicits._
 
 case class RDF2Manifest(base: Option[IRI],
                         derefIncludes: Boolean) extends RDFParser with LazyLogging {
 
-  def rdf2Manifest(rdf: RDFReader, visited: List[RDFNode] = List()): Either[String, List[Manifest]] =
+/*  private def cnv[A](p: RDFParser[A], cfg: Config): EitherT[IO,String,A] = {
+    EitherT(p.value.run(cfg))
+  } */
+  def rdf2Manifest(rdf: RDFReader, visited: List[RDFNode] = List()): RDFParser[Manifest] =
     for {
-      candidates <- rdf.subjectsWithType(mf_Manifest)
-      cfg = Config(IRI("http://internal/base"), rdf)
-      ns         <- parseNodes(candidates.toList, manifest(List())).value.run(cfg)
+      mfs <- rdf2Manifests(rdf,visited)
+      mf <- fromEither(takeSingle(mfs,"Number of manifests != 1"))
       // parseNodes(candidates.toList, manifest(List()))(rdf)
+    } yield mf
+
+
+  def rdf2Manifests(rdf: RDFReader, visited: List[RDFNode] = List()): RDFParser[List[Manifest]] =
+    for {
+      candidates <- fromEither(rdf.subjectsWithType(mf_Manifest))
+      ns <- parseNodes(candidates.toList, manifest(List()))
     } yield ns
 
   def manifest(visited: List[IRI]): RDFParser[Manifest] =  
@@ -175,9 +187,9 @@ case class RDF2Manifest(base: Option[IRI],
         val iriResolved = base.fold(iri)(base => base.resolve(iri))
         for {
           rdf <- fromEither(RDFAsJenaModel.fromURI(iriResolved.getLexicalForm, "TURTLE", Some(iriResolved)))
-          mfs <- fromEither(RDF2Manifest(Some(iriResolved), true).rdf2Manifest(rdf, iri +: visited))
-          manifest <- if (mfs.size == 1) ok(mfs.head)
-          else parseFail(s"More than one manifests found: ${mfs} at iri $iri")
+          manifest <- RDF2Manifest(Some(iriResolved), true).rdf2Manifest(rdf, iri +: visited)
+          //manifest <- if (mfs.size == 1) ok(mfs.head)
+          // else parseFail(s"More than one manifests found: ${mfs} at iri $iri")
         } yield (iri, Some(manifest))
       } else ok((iri, None))
     case _ => parseFail(s"Trying to deref an include from node $node which is not an IRI")
@@ -233,23 +245,24 @@ object RDF2Manifest extends LazyLogging {
            format: String,
            base: Option[String],
            derefIncludes: Boolean
-          ): Either[String, (Manifest,RDFBuilder)] = {
+          ): EitherT[IO, String, (Manifest,RDFBuilder)] = {
     for {
-      cs <- getContents(fileName)
+      cs <- EitherT(IO(getContents(fileName)))
       iriBase <- base match {
-        case None => Right(None)
-        case Some(str) => IRI.fromString(str).map(Some(_))
+        case None => EitherT.pure[IO,String](None)
+        case Some(str) => EitherT.fromEither[IO](IRI.fromString(str).map(Some(_)))
       }
-      rdf <- RDFAsJenaModel.fromChars(cs, format, iriBase).map(_.normalizeBNodes)
-      _ <- { println(s"RDF: ${rdf.serialize("TURTLE")}\n---");Right(())}
+      rdf <- RDFAsJenaModel.fromStringIO(cs.toString, format, iriBase).map(_.normalizeBNodes)
+//      _ <- { println(s"RDF: ${rdf.serialize("TURTLE")}\n---");Right(())}
       manifest <- fromRDF(rdf, iriBase, derefIncludes)
-      _ <- { println(s"Manifest: ${manifest.toString}\n---");Right(())}
+//      _ <- { println(s"Manifest: ${manifest.toString}\n---");Right(())}
     } yield (manifest,rdf)
   }
 
-  def fromRDF(rdf: RDFReader, base: Option[IRI], derefIncludes: Boolean): Either[String, Manifest] = {
-    RDF2Manifest(base,derefIncludes).rdf2Manifest(rdf).
-      flatMap(takeSingle(_,"Number of manifests != 1"))
+  def fromRDF(rdf: RDFReader, base: Option[IRI], derefIncludes: Boolean): EitherT[IO, String, Manifest] = {
+    val cfg = Config(IRI("http://internal/base"), rdf)
+    val x = RDF2Manifest(base,derefIncludes).rdf2Manifest(rdf)
+    EitherT(x.value.run(cfg))
   }
 
 }
