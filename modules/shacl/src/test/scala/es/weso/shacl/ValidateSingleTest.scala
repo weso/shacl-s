@@ -24,7 +24,7 @@ class ValidateSingleTest extends FunSpec with Matchers with TryValues with Optio
   lazy val ignoreFiles: List[String] = List()
 
   describe("Validate single") {
-    val file = getFileFromFolderWithExt(shaclFolder, name, "ttl")
+    val file = getFileFromFolderWithExt(shaclFolder, name, "ttl").unsafeRunSync
     it(s"Should validate file ${name} in folder ${shaclFolder}") {
       val str = Source.fromFile(file)("UTF-8").mkString
       validate(name, str)

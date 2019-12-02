@@ -247,7 +247,7 @@ object RDF2Manifest extends LazyLogging {
            derefIncludes: Boolean
           ): EitherT[IO, String, (Manifest,RDFBuilder)] = {
     for {
-      cs <- EitherT(IO(getContents(fileName)))
+      cs <- getContents(fileName)
       iriBase <- base match {
         case None => EitherT.pure[IO,String](None)
         case Some(str) => EitherT.fromEither[IO](IRI.fromString(str).map(Some(_)))

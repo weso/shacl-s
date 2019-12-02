@@ -23,14 +23,14 @@ class ValidateFolder_RDF4jTest extends FunSpec with Matchers with TryValues with
 
   lazy val ignoreFiles: List[String] = List()
 
-  def getTtlFiles(schemasDir: String): List[File] = {
+  def getTtlFiles(schemasDir: String): IO[List[File]] = {
     getFilesFromFolderWithExt(schemasDir, "ttl", ignoreFiles)
   }
 
   describe("Validate folder") {
-    val files = getTtlFiles(shaclFolder)
+    val files = getTtlFiles(shaclFolder).unsafeRunSync
     info(s"Validating files from folder $shaclFolder: $files")
-    for (file <- getTtlFiles(shaclFolder)) {
+    for (file <- files) {
       val name = file.getName
       it(s"Should validate file $name") {
         val str = Source.fromFile(file)("UTF-8").mkString

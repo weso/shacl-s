@@ -21,14 +21,14 @@ class ValidateFolderTest
 
   lazy val ignoreFiles: List[String] = List()
 
-  def getTtlFiles(schemasDir: String): List[File] = {
+  def getTtlFiles(schemasDir: String): IO[List[File]] = {
     getFilesFromFolderWithExt(schemasDir, "ttl", ignoreFiles)
   }
 
   describe("Validate folder") {
     val files = getTtlFiles(shaclFolder)
     info(s"Validating files from folder $shaclFolder: $files")
-    for (file <- getTtlFiles(shaclFolder)) {
+    for (file <- getTtlFiles(shaclFolder).unsafeRunSync) {
       val name = file.getName
       it(s"Should validate file $name") {
         val str = Source.fromFile(file)("UTF-8").mkString

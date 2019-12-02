@@ -24,7 +24,7 @@ class ValidateSingle_RDF4jTest extends FunSpec with Matchers with TryValues with
   lazy val ignoreFiles: List[String] = List()
 
   describe("Validate single") {
-    val file = getFileFromFolderWithExt(shaclFolder, name, "ttl")
+    val file = getFileFromFolderWithExt(shaclFolder, name, "ttl").unsafeRunSync()
     it(s"Should validate file ${name}") {
       val str = Source.fromFile(file)("UTF-8").mkString
       validate(name, str)
