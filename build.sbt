@@ -3,8 +3,8 @@ lazy val scala213 = "2.13.1"
 lazy val supportedScalaVersions = List(scala212, scala213)
 
 // Local dependencies
-lazy val srdfVersion           = "0.1.52"
-lazy val utilsVersion          = "0.1.60"
+lazy val srdfVersion           = "0.1.54"
+lazy val utilsVersion          = "0.1.63"
 
 // Dependency versions
 lazy val antlrVersion          = "4.7.1"
@@ -177,12 +177,14 @@ lazy val packagingSettings = Seq(
 lazy val compilationSettings = Seq(
   scalaVersion := "2.13.1",
   // format: off
+  javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
   scalacOptions ++= Seq(
     "-deprecation",                      // Emit warning and location for usages of deprecated APIs.
     "-encoding", "utf-8",                // Specify character encoding used by source files.
     "-explaintypes",                     // Explain type errors in more detail.
     "-feature",                          // Emit warning and location for usages of features that should be imported explicitly.  "-encoding", "UTF-8",
     "-language:_",
+    "-target:jvm-1.8",
     "-unchecked",                        // Enable additional warnings where generated code depends on assumptions.
     "-Xlint",
     "-Yrangepos",
