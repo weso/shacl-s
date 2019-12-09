@@ -93,7 +93,7 @@ lazy val shacl_s = project
     cancelable in Global      := true,
     fork                      := true,
 //    parallelExecution in Test := false,
-    crossScalaVersions := Nil,
+    crossScalaVersions := supportedScalaVersions,
     publish / skip := true,
     ThisBuild / turbo := true
   )
@@ -175,7 +175,6 @@ lazy val packagingSettings = Seq(
 )
 
 lazy val compilationSettings = Seq(
-  scalaVersion := "2.13.1",
   // format: off
   javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
   scalacOptions ++= Seq(
