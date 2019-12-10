@@ -15,8 +15,10 @@ import cats.effect._
 
 
 import scala.util._
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
-class ShaclCoreTest extends FunSpec with Matchers with TryValues with OptionValues with SchemaMatchers {
+class ShaclCoreTest extends AnyFunSpec with Matchers with TryValues with OptionValues with SchemaMatchers {
 
   val conf: Config = ConfigFactory.load()
   val shaclFolder = conf.getString("shaclCore")

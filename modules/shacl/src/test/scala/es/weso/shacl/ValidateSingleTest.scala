@@ -12,8 +12,10 @@ import scala.util._
 import cats.implicits._
 import cats.data.EitherT
 import cats.effect._
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
-class ValidateSingleTest extends FunSpec with Matchers with TryValues with OptionValues
+class ValidateSingleTest extends AnyFunSpec with Matchers with TryValues with OptionValues
   with SchemaMatchers {
 
   val name = "good7"
