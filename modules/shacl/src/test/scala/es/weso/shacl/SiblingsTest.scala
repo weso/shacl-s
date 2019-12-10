@@ -4,8 +4,10 @@ import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.nodes._
 import es.weso.shacl.converter.RDF2Shacl
 import org.scalatest._
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
-class SiblingsTest extends FunSpec
+class SiblingsTest extends AnyFunSpec
   with Matchers with EitherValues with OptionValues {
 
   val ex = "http://example.org/"

@@ -11,14 +11,15 @@ import es.weso.rdf.parser.RDFParser
 import es.weso.shacl.converter.RDF2Shacl
 import es.weso.shacl.{Schema, Shacl, manifest}
 import es.weso.shacl.manifest._
-import es.weso.shacl.validator.Validator
-import org.scalatest.{FunSpec, Matchers}
+import es.weso.shacl.validator.Validator
 import es.weso.shacl.manifest.{Manifest, ManifestAction, Result => ManifestResult, _}
 import cats.data.EitherT
 import cats.effect._
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 // import scala.util.{Either, Left, Right}
 
-class ReportGeneratorCompatTest extends FunSpec with Matchers with RDFParser {
+class ReportGeneratorCompatTest extends AnyFunSpec with Matchers with RDFParser {
 
   val conf: TConfig = ConfigFactory.load()
 //  val manifestFile = new File(conf.getString("manifestFile"))
