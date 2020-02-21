@@ -9,8 +9,10 @@ import es.weso.shacl.validator.Validator
 import cats.data.EitherT
 import cats.effect._
 import cats.implicits._
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
-class ShapeValidatorTest extends FunSpec with Matchers with TryValues with EitherValues {
+class ShapeValidatorTest extends AnyFunSpec with Matchers with TryValues with EitherValues {
 
   describe("Shapes") {
     it("Should validate single shape") {

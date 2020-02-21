@@ -10,10 +10,12 @@ import es.weso.rdf.nodes._
 import es.weso.shacl.{MessageMap, Shape, RefNode}
 import es.weso.shacl.report.{Severity, ValidationResult}
 import es.weso.utils.internal.CollectionCompat._
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 // import es.weso.shacl.validator.ShapeTyping._
 // import es.weso.typing.Typing
 
-class SHACLCheckerTest extends FunSpec with Matchers with TryValues with OptionValues {
+class SHACLCheckerTest extends AnyFunSpec with Matchers with TryValues with OptionValues {
 
   def mkShape(x: String): Shape = Shape.empty(StringLiteral(x))
   val rdf: RDFReader = RDFAsJenaModel.empty

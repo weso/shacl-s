@@ -11,9 +11,11 @@ import scala.io.Source
 import cats.data.EitherT
 import cats.effect._
 import cats.implicits._
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
 class ValidateFolderTest
-  extends FunSpec with Matchers with TryValues with OptionValues
+  extends AnyFunSpec with Matchers with TryValues with OptionValues
   with SchemaMatchers {
 
   val conf: Config = ConfigFactory.load()

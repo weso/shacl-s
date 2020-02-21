@@ -1,6 +1,7 @@
 package es.weso.shacl.report
 
-import org.scalatest.{FunSpec, Matchers}
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
 object Counter {
   var counter = 0
@@ -8,7 +9,7 @@ object Counter {
   def get: Int = counter
 }
 
-class CounterTest extends FunSpec with Matchers {
+class CounterTest extends AnyFunSpec with Matchers {
 
  val counter = Counter
 

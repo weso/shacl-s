@@ -2,8 +2,10 @@ package es.weso.shacl
 
 import org.scalatest._
 import es.weso.rdf.nodes._
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
-class AbstractSyntaxTest extends FunSpec with Matchers {
+class AbstractSyntaxTest extends AnyFunSpec with Matchers {
 
   describe("Abstract Syntax") {
     it("should be able to create a shape") {

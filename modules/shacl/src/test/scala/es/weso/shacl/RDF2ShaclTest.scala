@@ -7,8 +7,10 @@ import es.weso.shacl.converter.RDF2Shacl
 import es.weso.rdf.path._
 import cats.effect._
 import cats.data.EitherT
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
-class RDF2ShaclTest extends FunSpec with Matchers with TryValues with EitherValues
+class RDF2ShaclTest extends AnyFunSpec with Matchers with TryValues with EitherValues
   with SchemaMatchers {
 
   describe("RDf2Shacl Syntax") {
