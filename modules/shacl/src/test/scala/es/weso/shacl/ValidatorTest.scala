@@ -8,8 +8,10 @@ import es.weso.rdf.jena.RDFAsJenaModel
 import util._
 import es.weso.shacl.converter.RDF2Shacl
 import es.weso.shacl.validator.Validator
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
-class ValidatorTest extends FunSpec with Matchers with TryValues with OptionValues
+class ValidatorTest extends AnyFunSpec with Matchers with TryValues with OptionValues
   with SchemaMatchers {
 
   describe("Validator target Nodes") {

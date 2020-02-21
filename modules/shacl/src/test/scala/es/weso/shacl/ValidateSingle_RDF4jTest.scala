@@ -12,8 +12,10 @@ import cats.effect._
 import cats.implicits._
 import scala.io.Source
 import scala.util._
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
-class ValidateSingle_RDF4jTest extends FunSpec with Matchers with TryValues with OptionValues
+class ValidateSingle_RDF4jTest extends AnyFunSpec with Matchers with TryValues with OptionValues
   with SchemaMatchers {
 
   val name = "good4"

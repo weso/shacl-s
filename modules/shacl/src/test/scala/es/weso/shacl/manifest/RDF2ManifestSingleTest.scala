@@ -7,8 +7,10 @@ import org.scalatest._
 //import sext._
 
 import scala.util._
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
-class RDF2ManifestSingleTest extends FunSpec
+class RDF2ManifestSingleTest extends AnyFunSpec
   with Matchers with TryValues with OptionValues {
 
   val conf: Config = ConfigFactory.load()

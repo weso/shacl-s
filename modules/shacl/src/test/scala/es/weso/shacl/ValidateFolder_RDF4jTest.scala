@@ -14,8 +14,10 @@ import cats.data.EitherT
 import cats.effect._
 import scala.util._
 import cats.implicits._
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
-class ValidateFolder_RDF4jTest extends FunSpec with Matchers with TryValues with OptionValues
+class ValidateFolder_RDF4jTest extends AnyFunSpec with Matchers with TryValues with OptionValues
   with SchemaMatchers {
 
   val conf: Config = ConfigFactory.load()

@@ -15,8 +15,10 @@ import scala.collection.mutable
 import scala.util._
 import cats.data.EitherT
 import cats.effect._
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
-class ShaclSingleTest extends FunSpec with Matchers with TryValues with OptionValues with SchemaMatchers {
+class ShaclSingleTest extends AnyFunSpec with Matchers with TryValues with OptionValues with SchemaMatchers {
 
   val conf: Config = ConfigFactory.load()
   val shaclFolder = conf.getString("shaclCore") + "/node"
