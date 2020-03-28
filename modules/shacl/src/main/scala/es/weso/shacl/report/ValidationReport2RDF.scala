@@ -7,12 +7,13 @@ import es.weso.shacl.SHACLPrefixes._
 import es.weso.rdf.PREFIXES._
 import es.weso.rdf.nodes.{BooleanLiteral, RDFNode, StringLiteral}
 import es.weso.shacl.LiteralValue
+import cats.effect.IO
 
 class ValidationReport2RDF extends RDFSaver with LazyLogging {
 
-  def toRDF(vr: ValidationReport, initial: RDFBuilder): RDFBuilder = {
+  def toRDF(vr: ValidationReport, initial: RDFBuilder): IO[RDFBuilder] = {
     val result = validationReport(vr).run(initial)
-    result.value._1
+    result.map(_._1)
   }
 
   private def validationReport(vr: ValidationReport): RDFSaver[Unit] = for {
@@ -62,7 +63,7 @@ class ValidationReport2RDF extends RDFSaver with LazyLogging {
 
 object ValidationReport2RDF {
 
-  def apply(vr: ValidationReport, builder: RDFBuilder): RDFBuilder =
+  def run(vr: ValidationReport, builder: RDFBuilder): IO[RDFBuilder] =
     new ValidationReport2RDF().toRDF(vr,builder)
 
 }

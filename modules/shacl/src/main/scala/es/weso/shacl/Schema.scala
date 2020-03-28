@@ -6,6 +6,7 @@ import es.weso.shacl.converter.Shacl2RDF
 
 import scala.util.{Either, Left, Right}
 import sext._
+import cats.effect.IO
 
 case class Schema(pm: PrefixMap,
                   imports: List[IRI],
@@ -97,14 +98,15 @@ case class Schema(pm: PrefixMap,
 
   def serialize(format: String = "TURTLE",
                 base: Option[IRI],
-                builder: RDFBuilder): Either[String, String] = {
+                builder: RDFBuilder): IO[String] = {
     format.toUpperCase match {
       case "TREE" => {
-        Right(s"PrefixMap ${pm.treeString}\nShapes: ${shapes.treeString}")
+        IO(s"PrefixMap ${pm.treeString}\nShapes: ${shapes.treeString}")
       }
-      case _ => {
-        new Shacl2RDF {}.serialize(this, format, base, builder.empty)
-      }
+      case _ => for {
+        b <- builder.empty
+        str <- new Shacl2RDF {}.serialize(this, format, base, b)
+      } yield str
     }
   }
 

@@ -3,8 +3,8 @@ lazy val scala213 = "2.13.1"
 lazy val supportedScalaVersions = List(scala212, scala213)
 
 // Local dependencies
-lazy val srdfVersion           = "0.1.54"
-lazy val utilsVersion          = "0.1.63"
+lazy val srdfVersion           = "0.1.59"
+lazy val utilsVersion          = "0.1.67"
 
 // Dependency versions
 lazy val antlrVersion          = "4.7.1"
@@ -95,6 +95,7 @@ lazy val shacl_s = project
 //    parallelExecution in Test := false,
     crossScalaVersions := supportedScalaVersions,
     publish / skip := true,
+    publishArtifact := false,
     ThisBuild / turbo := true
   )
 
