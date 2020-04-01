@@ -215,8 +215,8 @@ lazy val commonSettings = compilationSettings ++ sharedDependencies ++ Seq(
     Resolver.bintrayRepo("weso", "weso-releases"),
     Resolver.sonatypeRepo("snapshots")
   ), 
-  coverageHighlighting := priorTo2_13(scalaVersion.value), 
-  coverageEnabled := priorTo2_13(scalaVersion.value)
+ // coverageHighlighting := priorTo2_13(scalaVersion.value), 
+ // coverageEnabled := priorTo2_13(scalaVersion.value)
 )
 
 def antlrSettings(packageName: String) = Seq(
