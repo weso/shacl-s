@@ -1,6 +1,6 @@
 package es.weso.shacl
 import cats._
-import cats.implicits._
+import cats.syntax.all._
 import es.weso.rdf.nodes.{Lang, LangLiteral, RDFNode, StringLiteral}
 
 case class MessageMap(mmap: Map[Option[Lang], String]) {

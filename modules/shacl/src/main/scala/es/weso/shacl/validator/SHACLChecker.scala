@@ -2,7 +2,7 @@ package es.weso.shacl.validator
 
 import cats._
 import cats.effect.IO
-import cats.implicits._
+import cats.syntax.all._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf._
 import es.weso.checking.CheckerCats

@@ -2,7 +2,7 @@ package es.weso.shacl.converter
 
 //import scala.util._
 //import cats.data._
-import cats.implicits._
+import cats.syntax.all._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.nodes._
 import es.weso.shacl.SHACLPrefixes._
