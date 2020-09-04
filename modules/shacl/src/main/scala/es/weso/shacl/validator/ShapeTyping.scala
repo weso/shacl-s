@@ -1,6 +1,6 @@
 package es.weso.shacl.validator
 import cats._
-import cats.implicits._
+import cats.syntax.all._
 import es.weso.rdf.nodes.RDFNode
 import es.weso.shacl.Shape
 import es.weso.shacl.report._

@@ -13,7 +13,7 @@ import es.weso.utils.EitherUtils._
 // import scala.util.{Failure, Success, Try}
 import cats.effect._
 import cats.data._
-import cats.implicits._
+import cats.syntax.all._
 import es.weso.rdf.parser._               
 import es.weso.utils.internal.CollectionCompat._
 import es.weso.rdf.triples.RDFTriple

@@ -1,7 +1,7 @@
 package es.weso.shacl.validator
 
 import cats._
-import cats.implicits._
+import cats.syntax.all._
 
 
 case class CheckResult[E: Show, A: Show, Log: Show](r: (Log, Either[E, A])) {
