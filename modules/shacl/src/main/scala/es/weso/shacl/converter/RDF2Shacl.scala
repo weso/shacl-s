@@ -104,7 +104,7 @@ private def getNode_s: ShaclParser[RDFNode] =
   StateT.liftF(liftIO(e)) */
 
 private def fromStream[A](e: Stream[IO,A]): ShaclParser[LazyList[A]] =
-  StateT.liftF(liftIO(e.compile.to[LazyList]))
+  StateT.liftF(liftIO(e.compile.to(LazyList)))
 
 
 private def fromEitherS[A](e: Either[String,A]): ShaclParser[A] =

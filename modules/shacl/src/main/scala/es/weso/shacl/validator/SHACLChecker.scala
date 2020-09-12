@@ -84,7 +84,7 @@ object SHACLChecker extends CheckerCats with LazyLogging {
   } yield r
 
  def fromStreamIO[A](ls: Stream[IO,A]): Check[LazyList[A]] = {
-   fromIO(ls.compile.to[LazyList])
+   fromIO(ls.compile.to(LazyList))
  }
 
 }
