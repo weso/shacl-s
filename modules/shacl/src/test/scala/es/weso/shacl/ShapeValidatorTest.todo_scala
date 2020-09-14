@@ -1,6 +1,9 @@
 package es.weso.shacl
 
 import org.scalatest._
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should._
+
 import es.weso.rdf.nodes._
 import es.weso.rdf.jena.RDFAsJenaModel
 import util._
@@ -10,7 +13,7 @@ import cats.data.EitherT
 import cats.effect._
 import cats.implicits._
 
-class ShapeValidatorTest extends FunSpec with Matchers with TryValues with EitherValues {
+class ShapeValidatorTest extends AnyFunSpec with Matchers with TryValues with EitherValues {
 
   describe("Shapes") {
     it("Should validate single shape") {
