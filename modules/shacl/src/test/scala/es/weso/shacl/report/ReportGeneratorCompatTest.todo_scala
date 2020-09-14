@@ -12,13 +12,14 @@ import es.weso.shacl.converter.RDF2Shacl
 import es.weso.shacl.{Schema, Shacl, manifest}
 import es.weso.shacl.manifest._
 import es.weso.shacl.validator.Validator
-import org.scalatest.{FunSpec, Matchers}
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should._
 import es.weso.shacl.manifest.{Manifest, ManifestAction, Result => ManifestResult, _}
 import cats.data.EitherT
 import cats.effect._
 // import scala.util.{Either, Left, Right}
 
-class ReportGeneratorCompatTest extends FunSpec with Matchers with RDFParser {
+class ReportGeneratorCompatTest extends AnyFunSpec with Matchers with RDFParser {
 
   val conf: TConfig = ConfigFactory.load()
 //  val manifestFile = new File(conf.getString("manifestFile"))
@@ -104,14 +105,12 @@ class ReportGeneratorCompatTest extends FunSpec with Matchers with RDFParser {
   def getData(a: ManifestAction, fileName: String, parentFolder: Path, manifestRdf: RDFReader, schemaRdf: RDFReader): EitherT[IO,String, RDFReader] =
   {
     a.data match {
-      case None => EitherT.pure[IO,String](RDFAsJenaModel.empty)
+      case None => EitherT.liftF[IO,String,RDFReader](RDFAsJenaModel.empty)
       case Some(iri) if iri.isEmpty => EitherT.pure[IO,String](manifestRdf)
       case Some(iri) => {
         val dataFileName = Paths.get(parentFolder.toUri.resolve(iri.uri)).toFile
         val dataFormat  = a.dataFormat.getOrElse(Shacl.defaultFormat)
-        for {
-          rdf <- RDFAsJenaModel.fromFileIO(dataFileName, dataFormat).map(_.normalizeBNodes)
-        } yield rdf
+        EitherT.liftF(RDFAsJenaModel.fromFile(dataFileName, dataFormat)) // TODO: We don't normalize BNodes
       }
     }
   }
@@ -124,7 +123,7 @@ class ReportGeneratorCompatTest extends FunSpec with Matchers with RDFParser {
     a.schema match {
       case None => {
         info(s"No data in manifestAction $a")
-        EitherT.pure[IO,String]((Schema.empty, RDFAsJenaModel.empty))
+        EitherT.liftF((Schema.empty, RDFAsJenaModel.empty))
       }
       case Some(iri) if iri.isEmpty => for {
         schema <- RDF2Shacl.getShacl(manifestRdf)
