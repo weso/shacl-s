@@ -1,6 +1,8 @@
 package es.weso.shacl.validator
 
-import org.scalatest._
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should._
+
 import SHACLChecker._
 // import cats._
 // import cats.implicits._
@@ -13,7 +15,7 @@ import es.weso.utils.internal.CollectionCompat._
 // import es.weso.shacl.validator.ShapeTyping._
 // import es.weso.typing.Typing
 
-class SHACLCheckerTest extends FunSpec with Matchers with TryValues with OptionValues {
+class SHACLCheckerTest extends AnyFunSpec with Matchers with TryValues with OptionValues {
 
   def mkShape(x: String): Shape = Shape.empty(StringLiteral(x))
   val rdf: RDFReader = RDFAsJenaModel.empty

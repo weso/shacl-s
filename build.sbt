@@ -1,10 +1,10 @@
-lazy val scala212 = "2.12.10"
-lazy val scala213 = "2.13.1"
+lazy val scala212 = "2.12.12"
+lazy val scala213 = "2.13.3"
 lazy val supportedScalaVersions = List(scala212, scala213)
 
 // Local dependencies
-lazy val srdfVersion           = "0.1.59"
-lazy val utilsVersion          = "0.1.67"
+lazy val srdfVersion           = "0.1.70"
+lazy val utilsVersion          = "0.1.69"
 
 // Dependency versions
 lazy val antlrVersion          = "4.7.1"
@@ -19,8 +19,8 @@ lazy val logbackVersion        = "1.2.3"
 lazy val loggingVersion        = "3.9.2"
 lazy val rdf4jVersion          = "3.0.0"
 lazy val scalacheckVersion     = "1.14.0"
-lazy val scalacticVersion      = "3.0.8"
-lazy val scalaTestVersion      = "3.2.2"
+lazy val scalacticVersion      = "3.2.0"
+lazy val scalaTestVersion      = "3.2.0"
 lazy val scalaGraphVersion     = "1.11.5"
 lazy val scalatagsVersion      = "0.6.7"
 lazy val scallopVersion        = "3.3.1"
@@ -189,7 +189,7 @@ lazy val compilationSettings = Seq(
     "-Xlint",
     "-Yrangepos",
     "-Ywarn-dead-code",                  // Warn when dead code is identified.
-    "-Xfatal-warnings",
+    // "-Xfatal-warnings",
     "-Ywarn-extra-implicit",             // Warn when more than one implicit parameter section is defined.
 //    "-Ymacro-annotations"
   )
