@@ -7,13 +7,16 @@ import es.weso.shacl.converter.RDF2Shacl
 import es.weso.shacl.validator.Validator
 import es.weso.utils.FileUtils._
 import org.scalatest._
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should._
+
 import scala.io.Source
 import scala.util._
 import cats.implicits._
 import cats.data.EitherT
 import cats.effect._
 
-class ValidateSingleTest extends FunSpec with Matchers with TryValues with OptionValues
+class ValidateSingleTest extends AnyFunSpec with Matchers with TryValues with OptionValues
   with SchemaMatchers {
 
   val name = "good7"
