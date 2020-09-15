@@ -7,11 +7,6 @@ import org.scalatest._
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should._
 
-import cats.data.EitherT
-import cats.effect._
-import cats.implicits._
-import es.weso.utils.IOUtils._
-
 class DeactivatedTest extends AnyFunSpec with Matchers with TryValues with OptionValues
   with SchemaMatchers {
 
@@ -40,11 +35,7 @@ class DeactivatedTest extends AnyFunSpec with Matchers with TryValues with Optio
 
       val r = for {
         rdf    <- RDFAsJenaModel.fromString(str, "TURTLE", None)
-        eitherSchema <- RDF2Shacl.getShacl(rdf).value
-        schema <- eitherSchema match {
-          case Left(s) => IO.raiseError(new RuntimeException(s"Error: $s"))
-          case Right(s) => IO.pure(s)
-        }
+        schema <- RDF2Shacl.getShacl(rdf)
         result <- Validator.validate(schema, rdf)
       } yield result
 

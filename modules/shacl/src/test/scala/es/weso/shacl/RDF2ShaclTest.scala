@@ -3,20 +3,19 @@ package es.weso.shacl
 import org.scalatest._
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should._
-
 import es.weso.rdf.nodes._
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.shacl.converter.RDF2Shacl
 import es.weso.rdf.path._
 import cats.effect._
-import cats.data.EitherT
+import es.weso.utils.IOUtils
 
 class RDF2ShaclTest extends AnyFunSpec with Matchers with TryValues with EitherValues
   with SchemaMatchers {
 
   describe("RDf2Shacl Syntax") {
 
-    it("should be able to get the a shape") {
+    it("should be able to get a shape") {
       val ex = IRI("http://example.org/")
       val str =
         """|@prefix : <http://example.org/>
@@ -24,13 +23,12 @@ class RDF2ShaclTest extends AnyFunSpec with Matchers with TryValues with EitherV
                  |
                  |:S a sh:Shape .
                  |""".stripMargin
-      val attempt: EitherT[IO,String, Schema] = for {
-        rdf <- RDFAsJenaModel.fromStringIO(str, "TURTLE")
+      val cmp: IO[Schema] = for {
+        rdf <- RDFAsJenaModel.fromString(str, "TURTLE")
         schema <- RDF2Shacl.getShacl(rdf)
-      } yield (schema)
+      } yield schema
       val s = ex + "S"
-      info(s"Attempt: $attempt")
-      attempt.value.unsafeRunSync match {
+      cmp.attempt.unsafeRunSync match {
         case Left(e) => fail(s"Failed: $e")
         case Right(v) => v should containShapes(Set(s))
       }
@@ -45,14 +43,13 @@ class RDF2ShaclTest extends AnyFunSpec with Matchers with TryValues with EitherV
                  |:S a sh:Shape .
                  |:T a sh:Shape .
                  |""".stripMargin
-      val attempt: EitherT[IO, String, Schema] = for {
-        rdf <- RDFAsJenaModel.fromStringIO(str, "TURTLE")
+      val cmp: IO[Schema] = for {
+        rdf <- RDFAsJenaModel.fromString(str, "TURTLE")
         schema <- RDF2Shacl.getShacl(rdf)
-      } yield (schema)
+      } yield schema
       val s = ex + "S"
       val t = ex + "T"
-      info(s"Attempt: $attempt")
-      attempt.value.unsafeRunSync match {
+      cmp.attempt.unsafeRunSync match {
         case Left(e) => fail(s"Failed: $e")
         case Right(v) => v should containShapes(Set(s, t))
       }
@@ -69,16 +66,15 @@ class RDF2ShaclTest extends AnyFunSpec with Matchers with TryValues with EitherV
                  |""".stripMargin
       val s = ex + "S"
       val n1 = ex + "n1"
-      val attempt: EitherT[IO,String,Shape] = for {
-        rdf <- RDFAsJenaModel.fromStringIO(str, "TURTLE")
+      val cmp: IO[Shape] = for {
+        rdf <- RDFAsJenaModel.fromString(str, "TURTLE")
         schema <- RDF2Shacl.getShacl(rdf)
-        shape <- EitherT.fromEither[IO](schema.shape(s))
-      } yield (shape)
-      attempt.value.unsafeRunSync match {
+        shape <- IOUtils.fromES(schema.shape(s))
+      } yield shape
+      cmp.attempt.unsafeRunSync match {
         case Left(e) => fail(s"Failed $e")
-        case Right(shape) => {
-          shape.targetNodes should contain only (n1)
-        }
+        case Right(shape) =>
+          shape.targetNodes should contain only n1
       }
     }
 
@@ -96,15 +92,14 @@ class RDF2ShaclTest extends AnyFunSpec with Matchers with TryValues with EitherV
       val s1 = ex + "s1"
       val s2 = ex + "s2"
       val t1 = ex + "t1"
-      val attempt = for {
-        rdf <- RDFAsJenaModel.fromStringIO(str, "TURTLE")
+      val cmp = for {
+        rdf <- RDFAsJenaModel.fromString(str, "TURTLE")
         schema <- RDF2Shacl.getShacl(rdf)
-      } yield (schema)
-      attempt.value.unsafeRunSync match {
+      } yield schema
+      cmp.attempt.unsafeRunSync match {
         case Left(e) => fail(s"Failed $e")
-        case Right(schema) => {
+        case Right(schema) =>
           schema.targetNodeDeclarations should contain only ((s2, S), (s1, S), (t1, T))
-        }
       }
     }
 
@@ -122,17 +117,15 @@ class RDF2ShaclTest extends AnyFunSpec with Matchers with TryValues with EitherV
          |""".stripMargin
       val S = ex + "S"
       val prop = ex + "prop"
-      val attempt = for {
-        rdf <- RDFAsJenaModel.fromStringIO(str, "TURTLE")
+      val cmp = for {
+        rdf <- RDFAsJenaModel.fromString(str, "TURTLE")
         schema <- RDF2Shacl.getShacl(rdf)
-        shape <- EitherT.fromEither[IO](schema.shape(S))
-      } yield (shape)
-      //val p1 = Shape.emptyPropertyShape(prop, PredicatePath(p)).copy(components = Seq(NodeKind(IRIKind)))
-      attempt.value.unsafeRunSync match {
+        shape <- IOUtils.fromES(schema.shape(S))
+      } yield shape
+      cmp.attempt.unsafeRunSync match {
         case Left(e) => fail(s"Failed $e")
-        case Right(shape) => {
-          shape.propertyShapes should contain only (RefNode(prop))
-        }
+        case Right(shape) =>
+          shape.propertyShapes should contain only RefNode(prop)
       }
 
     }
@@ -155,27 +148,25 @@ class RDF2ShaclTest extends AnyFunSpec with Matchers with TryValues with EitherV
       val S = ex + "S"
       val p = ex + "p"
       val prop = ex + "prop"
-      val attempt: EitherT[IO, String, (Shape, Schema)] = for {
-        rdf <- RDFAsJenaModel.fromStringIO(str, "TURTLE")
+      val cmp: IO[(Shape, Schema)] = for {
+        rdf <- RDFAsJenaModel.fromString(str, "TURTLE")
         schema <- RDF2Shacl.getShacl(rdf)
-        shape <- EitherT.fromEither[IO](schema.shape(S))
-      } yield ((shape, schema))
+        shape <- IOUtils.fromES(schema.shape(S))
+      } yield (shape, schema)
 
-      attempt.value.unsafeRunSync match {
+      cmp.attempt.unsafeRunSync match {
         case Left(e) => fail(s"Failed $e")
-        case Right((shape, schema)) => {
+        case Right((shape, schema)) =>
           shape.propertyShapes.length should be(1)
           val sref = shape.propertyShapes.head
           info(s"Shape ref: $sref")
           schema.shapesMap.get(sref) match {
-            case Some(pc: PropertyShape) => {
+            case Some(pc: PropertyShape) =>
               pc.id should be(prop)
               pc.predicate should be(Some(p))
               pc.components should contain only (NodeKind(IRIKind), MinCount(1), MaxCount(1))
-            }
             case other => fail(s"Failed with $other")
           }
-        }
       }
     }
 
@@ -192,26 +183,24 @@ class RDF2ShaclTest extends AnyFunSpec with Matchers with TryValues with EitherV
       val S = IRI(ex) + "S"
       val p = IRI(ex) + "p"
       val prop = IRI(ex) + "prop"
-      val attempt = for {
-        rdf <- RDFAsJenaModel.fromStringIO(str, "TURTLE")
+      val cmp = for {
+        rdf <- RDFAsJenaModel.fromString(str, "TURTLE")
         schema <- RDF2Shacl.getShacl(rdf)
-        shape <- EitherT.fromEither[IO](schema.shape(S))
+        shape <- IOUtils.fromES(schema.shape(S))
       } yield (shape, schema)
-      attempt.value.unsafeRunSync match {
+      cmp.attempt.unsafeRunSync match {
         case Left(e) => fail(s"Failed $e")
-        case Right((shape, schema)) => {
+        case Right((shape, schema)) =>
           shape.propertyShapes.length should be(1)
           val sref = shape.propertyShapes.head
           schema.shapesMap.get(sref) match {
             case None => fail(s"Not found shape with ref $sref in $schema")
-            case Some(ps: PropertyShape) => {
+            case Some(ps: PropertyShape) =>
               ps.id should be(prop)
               ps.predicate should be(Some(p))
-              ps.components should contain only (MinCount(1))
-            }
+              ps.components should contain only MinCount(1)
             case other => fail(s"Unexpected value $other")
           }
-        }
       }
     }
 
@@ -228,26 +217,24 @@ class RDF2ShaclTest extends AnyFunSpec with Matchers with TryValues with EitherV
       val S = IRI(ex) + "S"
       val p = IRI(ex) + "p"
       val prop = IRI(ex) + "prop"
-      val attempt = for {
-        rdf <- RDFAsJenaModel.fromStringIO(str, "TURTLE")
+      val cmp = for {
+        rdf <- RDFAsJenaModel.fromString(str, "TURTLE")
         schema <- RDF2Shacl.getShacl(rdf)
-        shape <- EitherT.fromEither[IO](schema.shape(S))
-      } yield ((shape, schema))
-      attempt.value.unsafeRunSync match {
+        shape <- IOUtils.fromES(schema.shape(S))
+      } yield (shape, schema)
+      cmp.attempt.unsafeRunSync match {
         case Left(e) => fail(s"Error parsing $e")
-        case Right((shape, schema)) => {
+        case Right((shape, schema)) =>
           val ip = InversePath(PredicatePath(p))
           shape.propertyShapes.length should be(1)
           val sref = shape.propertyShapes.head
           schema.shapesMap.get(sref) match {
-            case Some(ps: PropertyShape) => {
+            case Some(ps: PropertyShape) =>
               ps.id should be(prop)
               ps.path should be(ip)
-              ps.components should contain only (MinCount(1))
-            }
+              ps.components should contain only MinCount(1)
             case other => fail(s"Unexpected value $other")
           }
-        }
       }
     }
 
@@ -265,19 +252,17 @@ class RDF2ShaclTest extends AnyFunSpec with Matchers with TryValues with EitherV
          |""".stripMargin
       val S = ex + "S"
       val prop = ex + "prop"
-      val attempt = for {
-        rdf <- RDFAsJenaModel.fromStringIO(str, "TURTLE")
+      val cmp = for {
+        rdf <- RDFAsJenaModel.fromString(str, "TURTLE")
         schema <- RDF2Shacl.getShacl(rdf)
-        shape <- EitherT.fromEither[IO](schema.shape(S))
-        propShape <- EitherT.fromEither[IO](schema.shape(prop))
-      } yield ((shape, propShape))
-      //val p1 = Shape.emptyPropertyShape(prop, PredicatePath(p)).copy(components = Seq(NodeKind(IRIKind)))
-      attempt.value.unsafeRunSync match {
+        shape <- IOUtils.fromES(schema.shape(S))
+        propShape <- IOUtils.fromES(schema.shape(prop))
+      } yield (shape, propShape)
+      cmp.attempt.unsafeRunSync match {
         case Left(e) => fail(s"Failed $e")
-        case Right((shape,propShape)) => {
-          shape.propertyShapes should contain only (RefNode(prop))
-          propShape.components should contain only (MinInclusive(IntegerLiteral(3,"3"))) 
-        }
+        case Right((shape,propShape)) =>
+          shape.propertyShapes should contain only RefNode(prop)
+          propShape.components should contain only MinInclusive(IntegerLiteral(3,"3"))
       }
 
     }

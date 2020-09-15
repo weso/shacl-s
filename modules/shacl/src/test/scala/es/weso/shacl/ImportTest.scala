@@ -9,10 +9,7 @@ import es.weso.shacl.validator.Validator
 import org.scalatest._
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should._
-
-import cats.data.EitherT
 import cats.effect._
-import cats.implicits._
 
 class ImportTest extends AnyFunSpec with Matchers with TryValues with OptionValues
   with SchemaMatchers {
@@ -30,10 +27,11 @@ class ImportTest extends AnyFunSpec with Matchers with TryValues with OptionValu
         // _ <- { println(s"Extended RDF: ${extendedRdf.serialize("TURTLE").getOrElse("<None>")}"); Right(()) } 
         schema <- RDF2Shacl.getShacl(rdf)
         //_ <- { println(s"----\nSchema: ${schema.serialize("TURTLE", None,RDFAsJenaModel.empty)}"); Right(()) } 
-        result <- EitherT.fromEither[IO](Validator.validate(schema, rdf).leftMap(ar => s"AbstractResult: $ar"))
+        eitherResult <- Validator.validate(schema, rdf)
+        result <- eitherResult.fold(s => IO.raiseError(new RuntimeException(s"Error validating: $s")),IO.pure(_))
       } yield result
 
-      r.value.unsafeRunSync.fold(
+      r.attempt.unsafeRunSync.fold(
         e => fail(s"Error reading: $e"),
         pair => {
         val (typing, ok) = pair
@@ -41,8 +39,8 @@ class ImportTest extends AnyFunSpec with Matchers with TryValues with OptionValu
         val bob = IRI("http://example.org/bob")
         val person = IRI("http://example.org/Person")
         val hasName = IRI("http://example.org/hasName")
-        typing.getFailedValues(alice).map(_.id) should contain theSameElementsAs(List())
-        typing.getFailedValues(bob).map(_.id) should contain theSameElementsAs(List(person,hasName))
+        typing.getFailedValues(alice).map(_.id) should contain theSameElementsAs List()
+        typing.getFailedValues(bob).map(_.id) should contain theSameElementsAs List(person,hasName)
       })
     }
 

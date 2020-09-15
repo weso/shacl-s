@@ -1,10 +1,8 @@
 package es.weso.shacl
 
 import java.io.File
-
 import com.typesafe.config.{Config, ConfigFactory}
-import es.weso.rdf.nodes.IRI
-import es.weso.rdf.rdf4j.RDFAsRDF4jModel
+import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.shacl.converter.RDF2Shacl
 import es.weso.shacl.validator.Validator
 import es.weso.utils.FileUtils._
@@ -15,10 +13,10 @@ import org.scalatest.matchers.should._
 import scala.io.Source
 import cats.data.EitherT
 import cats.effect._
-import scala.util._
 import cats.implicits._
 
-class ValidateFolder_RDF4jTest extends AnyFunSpec with Matchers with TryValues with OptionValues
+class ValidateFolderTest
+  extends AnyFunSpec with Matchers with TryValues with OptionValues
   with SchemaMatchers {
 
   val conf: Config = ConfigFactory.load()
@@ -31,9 +29,9 @@ class ValidateFolder_RDF4jTest extends AnyFunSpec with Matchers with TryValues w
   }
 
   describe("Validate folder") {
-    val files = getTtlFiles(shaclFolder).unsafeRunSync
+    val files = getTtlFiles(shaclFolder)
     info(s"Validating files from folder $shaclFolder: $files")
-    for (file <- files) {
+    for (file <- getTtlFiles(shaclFolder).unsafeRunSync) {
       val name = file.getName
       it(s"Should validate file $name") {
         val str = Source.fromFile(file)("UTF-8").mkString
@@ -43,17 +41,22 @@ class ValidateFolder_RDF4jTest extends AnyFunSpec with Matchers with TryValues w
   }
 
   def validate(name: String, str: String): Unit = {
-    val attempt = for {
-      rdf <- RDFAsRDF4jModel.fromChars(str, "TURTLE", Some(IRI("http://example.org/")))
+    val cmp = for {
+      rdf <- RDFAsJenaModel.fromString(str, "TURTLE")
       schema <- RDF2Shacl.getShacl(rdf)
-      result <- EitherT.fromEither[IO](Validator.validate(schema, rdf).leftMap(_.toString))
+      eitherResult <- Validator.validate(schema, rdf)
+      result <- eitherResult.fold(err => IO.raiseError(new RuntimeException(s"Error: ${err}")), IO.pure(_))
     } yield result
-    attempt.value.unsafeRunSync match {
-      case Left(e) => {
-        fail(s"Error validating $name: $e")
+    cmp.attempt.unsafeRunSync().fold(
+      e => fail(s"Error validating $name: $e"),
+      result => {
+        val (typing,ok) = result
+        if (!ok) {
+          info(s"Failed nodes: ${typing.t.getFailed}")
+        }
+        typing.t.allOk should be(true)
       }
-      case Right(typing) => ()
-    }
+    )
   }
 
 }

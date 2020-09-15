@@ -15,6 +15,7 @@ import scala.util._
 import cats.implicits._
 import cats.data.EitherT
 import cats.effect._
+import es.weso.utils.IOUtils2.either2io
 
 class ValidateSingleTest extends AnyFunSpec with Matchers with TryValues with OptionValues
   with SchemaMatchers {
@@ -22,32 +23,34 @@ class ValidateSingleTest extends AnyFunSpec with Matchers with TryValues with Op
   val name = "good7"
 
   val conf: Config = ConfigFactory.load()
-  val shaclFolder = conf.getString("shaclTests")
+  val shaclFolder: String = conf.getString("shaclTests")
 
   lazy val ignoreFiles: List[String] = List()
 
   describe("Validate single") {
     val file = getFileFromFolderWithExt(shaclFolder, name, "ttl").unsafeRunSync
-    it(s"Should validate file ${name} in folder ${shaclFolder}") {
+    it(s"Should validate file $name in folder $shaclFolder") {
       val str = Source.fromFile(file)("UTF-8").mkString
       validate(name, str)
     }
   }
 
   def validate(name: String, str: String): Unit = {
-    // val attempt: EitherT[IO,String,(ShapeTyping, Boolean)] 
-    val attempt = for {
-      rdf <- RDFAsJenaModel.fromStringIO(str, "TURTLE")
+    val cmp = for {
+      rdf <- RDFAsJenaModel.fromString(str, "TURTLE")
       schema <- RDF2Shacl.getShacl(rdf)
-      result <- EitherT.fromEither[IO](Validator.validate(schema, rdf).leftMap(_.toString))
-    } yield result
-    attempt.value.unsafeRunSync match {
+      eitherresult <- Validator.validate(schema, rdf)
+      result <- either2io(eitherresult)
+      builder <- RDFAsJenaModel.empty
+      (typing,ok) = result
+      report <- typing.toValidationReport.toRDF(builder)
+      strReport <- report.serialize("TURTLE")
+    } yield (ok, strReport)
+    cmp.attempt.unsafeRunSync match {
       case Left(e) => fail(s"Error validating $name: $e")
-      case Right(result) => {
-        val (typing,ok) = result
-        info(s"Typing: ${typing.show}")
-        val builder = RDFAsJenaModel.empty
-        info(s"Validation report: ${typing.toValidationReport.toRDF(builder).getOrElse(builder).serialize("TURTLE")}")
+      case Right(pair) => {
+        val (ok,strReport) = pair
+        info(s"Validation report: ${strReport}")
         ok should be(true)
       }
     }
