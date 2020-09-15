@@ -373,7 +373,9 @@ case class Validator(schema: Schema) extends LazyLogging {
 
   private def datatypeChecker(d: IRI): NodeChecker = attempt => node => for {
     rdf <- getRDF
-    b <- hasDatatype(rdf, node, d)
+    b <- hasDatatype(rdf, node, d).handleErrorWith {
+      err => addNotEvidence(attempt, err, s"Error checking datatype ${d.show} for node ${node.show}") >> ok(false)
+    }
     t <- condition(b,attempt, datatypeError(node, d, attempt),s"$node has datatype $d")
   } yield t
 
@@ -881,11 +883,10 @@ case class Validator(schema: Schema) extends LazyLogging {
   }
 
   private def hasDatatype(rdf: RDFReader, node: RDFNode, d: IRI): Check[Boolean] = {
-    fromIO(rdf.checkDatatype(node, d)) /* match {
-      case Left(msg) => false
-      case Right(true) => true
-      case Right(false) => false
-    } */
+    for {
+      eitherBoolean <- fromIO(rdf.checkDatatype(node, d).attempt)
+      b <- eitherBoolean.fold(_ => ok(false), ok(_))
+    } yield b
   }
 
   private[validator] def debug(msg: String): Check[Unit] = {
