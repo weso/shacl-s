@@ -73,17 +73,24 @@ lazy val simulacrum        = "org.typelevel" %% "simulacrum"     % simulacrumVer
 
 lazy val shacl_s = project
   .in(file("."))
-  .enablePlugins(ScalaUnidocPlugin, SbtNativePackager, WindowsPlugin, JavaAppPackaging, LauncherJarPlugin)
+  .enablePlugins(ScalaUnidocPlugin, 
+    SiteScaladocPlugin, 
+    AsciidoctorPlugin, 
+    SbtNativePackager, 
+    WindowsPlugin, 
+    JavaAppPackaging, 
+    LauncherJarPlugin)
   .disablePlugins(RevolverPlugin)
-//  .settings(
-//    buildInfoKeys := BuildInfoKey.ofN(name, version, scalaVersion, sbtVersion),
-//    buildInfoPackage := "es.weso.shaclex.buildinfo" 
-//  )
   .settings(commonSettings, packagingSettings, publishSettings, ghPagesSettings, wixSettings)
   .aggregate(shacl)
   .dependsOn(shacl)
   .settings(
+    siteSubdirName in ScalaUnidoc := "scaladoc/latest",
+    addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), siteSubdirName in ScalaUnidoc),
     unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(noDocProjects: _*),
+    mappings in makeSite ++= Seq(
+      file("src/assets/favicon.ico") -> "favicon.ico"
+    ),
     libraryDependencies ++= Seq(
       logbackClassic,
       scalaLogging,
@@ -94,7 +101,6 @@ lazy val shacl_s = project
     fork                      := true,
 //    parallelExecution in Test := false,
     crossScalaVersions := supportedScalaVersions,
-    publish / skip := true,
     publishArtifact := false,
     ThisBuild / turbo := true
   )
