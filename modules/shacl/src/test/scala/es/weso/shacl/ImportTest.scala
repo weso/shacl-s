@@ -20,8 +20,7 @@ class ImportTest extends AnyFunSpec with Matchers with TryValues with OptionValu
 
   describe("import") {
     it(s"Validates a shape that imports another one") {
-      val r = for {
-        rdf <- RDFAsJenaModel.fromIRI(shaclFolder + "imports/import.ttl")
+      val r = RDFAsJenaModel.fromIRI(shaclFolder + "imports/import.ttl").use(rdf => for {
         //_ <- { println(s"RDF: ${rdf.serialize("TURTLE").getOrElse("<None>")}"); Right(()) } 
         // extendedRdf <- rdf.extendImports()
         // _ <- { println(s"Extended RDF: ${extendedRdf.serialize("TURTLE").getOrElse("<None>")}"); Right(()) } 
@@ -29,7 +28,7 @@ class ImportTest extends AnyFunSpec with Matchers with TryValues with OptionValu
         //_ <- { println(s"----\nSchema: ${schema.serialize("TURTLE", None,RDFAsJenaModel.empty)}"); Right(()) } 
         eitherResult <- Validator.validate(schema, rdf)
         result <- eitherResult.fold(s => IO.raiseError(new RuntimeException(s"Error validating: $s")),IO.pure(_))
-      } yield result
+      } yield result)
 
       r.attempt.unsafeRunSync.fold(
         e => fail(s"Error reading: $e"),

@@ -41,12 +41,11 @@ class ValidateFolderTest
   }
 
   def validate(name: String, str: String): Unit = {
-    val cmp = for {
-      rdf <- RDFAsJenaModel.fromString(str, "TURTLE")
+    val cmp = RDFAsJenaModel.fromString(str, "TURTLE").use(rdf => for {
       schema <- RDF2Shacl.getShacl(rdf)
       eitherResult <- Validator.validate(schema, rdf)
       result <- eitherResult.fold(err => IO.raiseError(new RuntimeException(s"Error: ${err}")), IO.pure(_))
-    } yield result
+    } yield result)
     cmp.attempt.unsafeRunSync().fold(
       e => fail(s"Error validating $name: $e"),
       result => {

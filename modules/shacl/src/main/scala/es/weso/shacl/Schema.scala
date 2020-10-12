@@ -103,18 +103,17 @@ case class Schema(pm: PrefixMap,
       case "TREE" => {
         IO(s"PrefixMap ${pm.treeString}\nShapes: ${shapes.treeString}")
       }
-      case _ => for {
-        b <- builder.empty
+      case _ => builder.empty.use(b => for {
         str <- new Shacl2RDF {}.serialize(this, format, base, b)
-      } yield str
+      } yield str)
     }
   }
 
 }
 
-// Companion iriObjects
 object Schema {
-  val empty =
+
+  val empty: Schema =
     Schema(
       pm = SHACLPrefixes.defaultPrefixMap,
       imports = List(),
@@ -122,4 +121,5 @@ object Schema {
       shapesMap = Map(),
       propertyGroups = Map()
     )
+
 }

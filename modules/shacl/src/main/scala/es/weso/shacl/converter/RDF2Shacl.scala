@@ -100,8 +100,8 @@ private def getRDF_s: ShaclParser[RDFReader] =
 private def getNode_s: ShaclParser[RDFNode] = 
   StateT.liftF(getNode)
 
-/* private def fromIO[A](e: IO[A]): ShaclParser[A] =
-  StateT.liftF(liftIO(e)) */
+ private def io2s[A](e: IO[A]): ShaclParser[A] =
+  StateT.liftF(liftIO(e)) 
 
 private def fromStream[A](e: Stream[IO,A]): ShaclParser[LazyList[A]] =
   StateT.liftF(liftIO(e.compile.to(LazyList)))
@@ -161,13 +161,13 @@ private def anyOf_s[A](ps: ShaclParser[A]*): ShaclParser[Seq[A]] = {
 */
 
 private def getShaclFromRDFReader(rdf: RDFReader): ShaclParser[Schema] = {
-    val pm = rdf.getPrefixMap
     for {
       sm <- shapesMap
       imports <- parseImports
       entailments <- parseEntailments
       parsedPropertyGroups <- getParsedPropertyGroups
       parsedShapeMap <- getShapesMap
+      pm <- io2s(rdf.getPrefixMap)
     } yield Schema(
       pm = pm,
       imports = imports,

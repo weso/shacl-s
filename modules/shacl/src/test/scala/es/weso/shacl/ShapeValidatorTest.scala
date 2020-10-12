@@ -30,12 +30,11 @@ class ShapeValidatorTest extends AnyFunSpec with Matchers with TryValues with Ei
                  |   sh:property [sh:path :q; sh:datatype xsd:integer; sh:minCount 1] .
                  |:x :p 23; :q "xx" .
                  |""".stripMargin
-      val cmp = for {
-        rdf <- RDFAsJenaModel.fromString(str, "TURTLE")
+      val cmp = RDFAsJenaModel.fromString(str, "TURTLE").use(rdf => for {
         schema <- RDF2Shacl.getShacl(rdf)
         eitherResult <- Validator.validate(schema, rdf)
         result <- eitherResult.fold(err => IO.raiseError(new RuntimeException(s"Error validating: ${err.toString}")),IO.pure(_))
-      } yield Validator(schema).showResult(result)
+      } yield Validator(schema).showResult(result))
       cmp.attempt.unsafeRunSync match {
         case Right(result) => info(s"${result}")
         case Left(e) => fail(s"Failed: $e")

@@ -36,16 +36,17 @@ class ValidateSingleTest extends AnyFunSpec with Matchers with TryValues with Op
   }
 
   def validate(name: String, str: String): Unit = {
-    val cmp = for {
-      rdf <- RDFAsJenaModel.fromString(str, "TURTLE")
+    val cmp = (
+      RDFAsJenaModel.fromString(str, "TURTLE"), 
+      RDFAsJenaModel.empty
+      ).tupled.use{ case (rdf,builder) => for {
       schema <- RDF2Shacl.getShacl(rdf)
       eitherresult <- Validator.validate(schema, rdf)
       result <- either2io(eitherresult)
-      builder <- RDFAsJenaModel.empty
       (typing,ok) = result
       report <- typing.toValidationReport.toRDF(builder)
       strReport <- report.serialize("TURTLE")
-    } yield (ok, strReport)
+    } yield (ok, strReport)}
     cmp.attempt.unsafeRunSync match {
       case Left(e) => fail(s"Error validating $name: $e")
       case Right(pair) => {

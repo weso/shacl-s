@@ -3,14 +3,14 @@ lazy val scala213 = "2.13.3"
 lazy val supportedScalaVersions = List(scala212, scala213)
 
 // Local dependencies
-lazy val srdfVersion           = "0.1.70"
+lazy val srdfVersion           = "0.1.74"
 lazy val utilsVersion          = "0.1.69"
 
 // Dependency versions
 lazy val antlrVersion          = "4.7.1"
-lazy val catsVersion           = "2.0.0"
+lazy val catsVersion           = "2.2.0"
 lazy val commonsTextVersion    = "1.8"
-lazy val circeVersion          = "0.12.0-RC3"
+lazy val circeVersion          = "0.14.0-M1"
 lazy val diffsonVersion        = "4.0.0"
 // lazy val effVersion            = "4.6.1"
 lazy val jenaVersion           = "3.13.1"
@@ -38,7 +38,7 @@ lazy val scalaMacrosVersion   = "2.1.1"
 lazy val antlr4            = "org.antlr"                  % "antlr4"               % antlrVersion
 lazy val catsCore          = "org.typelevel"              %% "cats-core"           % catsVersion
 lazy val catsKernel        = "org.typelevel"              %% "cats-kernel"         % catsVersion
-lazy val catsMacros        = "org.typelevel"              %% "cats-macros"         % catsVersion
+// lazy val catsMacros        = "org.typelevel"              %% "cats-macros"         % catsVersion
 lazy val circeCore         = "io.circe"                   %% "circe-core"          % circeVersion
 lazy val circeGeneric      = "io.circe"                   %% "circe-generic"       % circeVersion
 lazy val circeParser       = "io.circe"                   %% "circe-parser"        % circeVersion
@@ -123,7 +123,7 @@ lazy val shacl = project
       typing,
       validating,
       catsKernel,
-      catsMacros, 
+      // catsMacros, 
       srdf,
       srdf4j % Test,
       srdfJena % Test
@@ -142,7 +142,7 @@ lazy val utilsTest = project
       circeParser,
       catsCore,
       catsKernel,
-      catsMacros,
+//      catsMacros,
       diffsonCirce,
       xercesImpl,
       commonsText,

@@ -59,10 +59,9 @@ class SiblingsTest extends AnyFunSpec
   describe("Parent") {
 
     it("should be able to find parent of a shape") {
-      val eitherParents = for {
-        rdf <- RDFAsJenaModel.fromString(str, "TURTLE")
+      val eitherParents = RDFAsJenaModel.fromString(str, "TURTLE").use(rdf => for {
         schema <- RDF2Shacl.getShacl(rdf)
-      } yield schema.parents(RefNode(psFemale))
+      } yield schema.parents(RefNode(psFemale)))
 
       eitherParents.attempt.unsafeRunSync match {
         case Right(ps) =>
@@ -75,10 +74,9 @@ class SiblingsTest extends AnyFunSpec
     describe("SiblingQualifiedValueShapes") {
       it("should be able to find siblings of a shape") {
 
-        val eitherShapes = for {
-          rdf <- RDFAsJenaModel.fromString(str, "TURTLE")
+        val eitherShapes = RDFAsJenaModel.fromString(str, "TURTLE").use(rdf => for {
           schema <- RDF2Shacl.getShacl(rdf)
-        } yield schema.siblingQualifiedShapes(RefNode(psFemale))
+        } yield schema.siblingQualifiedShapes(RefNode(psFemale)))
 
         eitherShapes.attempt.unsafeRunSync match {
           case Right(ss) =>

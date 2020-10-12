@@ -35,12 +35,11 @@ class ValidateSingle_RDF4jTest extends AnyFunSpec with Matchers with TryValues w
   }
 
   def validate(name: String, str: String): Unit = {
-    val cmp = for {
-      rdf <- RDFAsRDF4jModel.fromChars(str, "TURTLE", Some(IRI("http://example.org/")))
+    val cmp = RDFAsRDF4jModel.fromChars(str, "TURTLE", Some(IRI("http://example.org/"))).use(rdf => for {
       schema <- RDF2Shacl.getShacl(rdf)
       eitherresult <- Validator.validate(schema, rdf)
       result <- eitherresult.fold(err => IO.raiseError(new RuntimeException(s"Error: ${err}")), IO.pure(_))
-    } yield result
+    } yield result)
     cmp.attempt.unsafeRunSync match {
       case Left(e) => fail(s"Error validating $name: $e")
       case Right(typing) => info(s"Validated $name with result=$typing")
