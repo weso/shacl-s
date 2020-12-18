@@ -8,7 +8,7 @@ lazy val utilsVersion          = "0.1.69"
 
 // Dependency versions
 lazy val antlrVersion          = "4.7.1"
-lazy val catsVersion           = "2.2.0"
+lazy val catsVersion           = "2.3.1"
 lazy val commonsTextVersion    = "1.8"
 lazy val circeVersion          = "0.14.0-M1"
 lazy val diffsonVersion        = "4.0.0"
