@@ -1,6 +1,6 @@
 package es.weso.shacl.report
 
-import org.scalatest._
+// import org.scalatest._
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should._
 

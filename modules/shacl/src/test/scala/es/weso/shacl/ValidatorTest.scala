@@ -24,9 +24,9 @@ class ValidatorTest extends AnyFunSpec with Matchers with TryValues with OptionV
                  |:S a sh:Shape; sh:targetNode :x, :y .
                  |:T a sh:Shape; sh:targetNode :z .
                  |""".stripMargin
-      val cmp = RDFAsJenaModel.fromString(str, "TURTLE").use(rdf => for {
+      val cmp = RDFAsJenaModel.fromString(str, "TURTLE").flatMap(_.use(rdf => for {
         schema <- RDF2Shacl.getShacl(rdf)
-      } yield (rdf, schema))
+      } yield (rdf, schema)))
       cmp.attempt.unsafeRunSync match {
         case Left(e) => fail(s"Error: $e")
         case Right((rdf,schema)) => {
@@ -61,11 +61,11 @@ class ValidatorTest extends AnyFunSpec with Matchers with TryValues with OptionV
                  |:good2 :p 1, 2 .
                  |:bad1 :q 1 .
                  |""".stripMargin
-      val cmp = RDFAsJenaModel.fromString(str, "TURTLE").use(rdf => for {
+      val cmp = RDFAsJenaModel.fromString(str, "TURTLE").flatMap(_.use(rdf => for {
         schema <- RDF2Shacl.getShacl(rdf)
         validator = Validator(schema)
         checked <- validator.validateAll(rdf)
-      } yield (rdf, schema, validator,checked))
+      } yield (rdf, schema, validator,checked)))
       cmp.attempt.unsafeRunSync.fold(
         e => fail(s"Error: $e"),
         pair => {
@@ -94,11 +94,11 @@ class ValidatorTest extends AnyFunSpec with Matchers with TryValues with OptionV
       val str = s"""|@prefix : $ex
                 |:x :p 1 .
                 |""".stripMargin
-      val eitherRdf = RDFAsJenaModel.fromChars(str, "TURTLE").use(rdf => {
+      val eitherRdf = RDFAsJenaModel.fromChars(str, "TURTLE").flatMap(_.use(rdf => {
         val validator = Validator(Schema.empty)
         for {
         checked <- validator.validateAll(rdf)
-      } yield (rdf,checked)})
+      } yield (rdf,checked)}))
 
       eitherRdf.attempt.unsafeRunSync().fold(
         e => fail(s"Error: $e"),
