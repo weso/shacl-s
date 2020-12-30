@@ -9,13 +9,18 @@ import es.weso.shacl.converter.RDF2Shacl
 import es.weso.shacl.validator.Validator
 import es.weso.utils.FileUtils._
 import org.scalatest._
-import scala.io.Source
-import cats.data.EitherT
-import cats.effect._
-import scala.util._
-import cats.implicits._
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should._
 
-class ValidateFolder_RDF4jTest extends FunSpec with Matchers with TryValues with OptionValues
+import scala.io.Source
+// import cats.data.EitherT
+import cats.effect._
+
+import scala.util._
+// import cats.implicits._
+import es.weso.utils.IOUtils2.either2io
+
+class ValidateFolder_RDF4jTest extends AnyFunSpec with Matchers with TryValues with OptionValues
   with SchemaMatchers {
 
   val conf: Config = ConfigFactory.load()
@@ -40,16 +45,14 @@ class ValidateFolder_RDF4jTest extends FunSpec with Matchers with TryValues with
   }
 
   def validate(name: String, str: String): Unit = {
-    val attempt = for {
-      rdf <- RDFAsRDF4jModel.fromChars(str, "TURTLE", Some(IRI("http://example.org/")))
+    val cmp = RDFAsRDF4jModel.fromChars(str, "TURTLE", Some(IRI("http://example.org/"))).use(rdf => for {
       schema <- RDF2Shacl.getShacl(rdf)
-      result <- EitherT.fromEither[IO](Validator.validate(schema, rdf).leftMap(_.toString))
-    } yield result
-    attempt.value.unsafeRunSync match {
-      case Left(e) => {
-        fail(s"Error validating $name: $e")
-      }
-      case Right(typing) => ()
+      eitherResult <- Validator.validate(schema, rdf)
+      result <- either2io(eitherResult)
+    } yield result)
+    cmp.attempt.unsafeRunSync match {
+      case Left(e) => fail(s"Error validating $name: $e")
+      case Right(typing) => info(s"Validated $name")
     }
   }
 

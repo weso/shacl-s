@@ -11,14 +11,15 @@ import es.weso.utils._
 import es.weso.shacl.showShacl._
 import SHACLChecker._
 import es.weso.rdf.operations.Comparisons
-import es.weso.shacl.report.{AbstractResult, MsgError, Severity, ValidationResult}
+import es.weso.shacl.report.{AbstractResult, Severity, ValidationResult}
 import es.weso.shacl.report.ValidationResult._
 import es.weso.rdf.operations.Comparisons._
 import es.weso.rdf.triples.RDFTriple
 import es.weso.utils.internal.CollectionCompat._
+import cats.effect.IO 
 
 /**
- * This validator is implemented directly in Scala using cats library
+ * This validator is implemented directly in Scala using the cats library
  */
 
 case class Validator(schema: Schema) extends LazyLogging {
@@ -32,10 +33,10 @@ case class Validator(schema: Schema) extends LazyLogging {
     schema.targetNodeShapes
   }
 
-  def runCheck[A: Show](c: Check[A], rdf: RDFReader): CheckResult[AbstractResult, A, Log] = {
+  def runCheck[A: Show](c: Check[A], rdf: RDFReader): IO[CheckResult[AbstractResult, A, Log]] = {
     val initial: ShapeTyping = ShapeTyping.empty
-    val r = run(c)(rdf)(initial)
-    CheckResult(r)
+    val r = run(c)(rdf)(initial).map(CheckResult(_))
+    r
   }
 
   /**
@@ -83,10 +84,10 @@ case class Validator(schema: Schema) extends LazyLogging {
     } yield r
   }
 
-  def getTriplesWithPredicate(p: IRI,
+   def getTriplesWithPredicate(p: IRI,
                               rdf: RDFReader
-                             ): Check[Set[RDFTriple]] =
-    fromEither(rdf.triplesWithPredicate(p).leftMap(MsgError(_)))
+                             ): Check[LazyList[RDFTriple]] = 
+    fromStreamIO(rdf.triplesWithPredicate(p))
 
   def checkTargetSubjectsOf(preds: Seq[IRI]): ShapeChecker = shape => {
     def chk(n: RDFNode): CheckTyping = nodeShape(n,shape)
@@ -108,8 +109,8 @@ case class Validator(schema: Schema) extends LazyLogging {
     } yield r
   }
 
-  def findNodesInClass(cls: RDFNode, rdf: RDFReader): Check[List[RDFNode]] =
-    fromEither(rdf.getSHACLInstances(cls).map(_.toList).leftMap(MsgError(_)))
+  def findNodesInClass(cls: RDFNode, rdf: RDFReader): Check[LazyList[RDFNode]] =
+    fromStreamIO(rdf.getSHACLInstances(cls)) // .map(_.toList).leftMap(MsgError(_)))
 
   private def nodeShapeRef(node: RDFNode, shapeRef: RefNode, attempt: Attempt): CheckTyping = for {
     rdf <- getRDF
@@ -215,7 +216,7 @@ case class Validator(schema: Schema) extends LazyLogging {
     for {
       ps <- getPropertyShapeRef(sref, attempt, node)
       rdf <- getRDF
-      os <- fromEither(rdf.objectsWithPath(node, path).leftMap(MsgError(_)))
+      os <- fromStreamIO(rdf.objectsWithPath(node, path))
       // _ <- debug(s"checkPropertyShapePath: os=$os\nnode: $node, path=${path.show}")
       shape <- getShapeRef(sref,attempt,node)
       r <- checkAllWithTyping(os.toLazyList,(o: RDFNode) => {
@@ -307,7 +308,7 @@ case class Validator(schema: Schema) extends LazyLogging {
     for {
       rdf <- getRDF
       node = attempt.node
-      os <- fromEither(rdf.objectsWithPath(node, path).leftMap(MsgError(_)))
+      os <- fromStreamIO(rdf.objectsWithPath(node, path))
       ls = os.toList
       check: CheckTyping = c match {
         case MinCount(n) => minCount(n, ls, attempt, path)
@@ -320,7 +321,7 @@ case class Validator(schema: Schema) extends LazyLogging {
           hasValuePropertyChecker(v, ls, attempt, node, path)
         }
         case Equals(p) => for {
-          values <- fromEither(rdf.objectsWithPath(node, PredicatePath(p)).leftMap(MsgError(_)))
+          values <- fromStreamIO(rdf.objectsWithPath(node, PredicatePath(p)))
           v <- equalsPath(ls, values.toList, p, attempt, path)
         } yield v
         case _ => checkValues(ls, component2Checker(c)(attempt)(_))
@@ -351,7 +352,7 @@ case class Validator(schema: Schema) extends LazyLogging {
   private def classComponentChecker(cls: RDFNode): NodeChecker = attempt => node => {
     for {
       rdf <- getRDF
-      b <- fromEither(rdf.hasSHACLClass(node, cls).leftMap(MsgError(_)))
+      b <- fromIO(rdf.hasSHACLClass(node, cls))
       t <- condition(b,attempt,
         classError(node, cls, attempt),
         s"$node is in class $cls")
@@ -372,11 +373,10 @@ case class Validator(schema: Schema) extends LazyLogging {
 
   private def datatypeChecker(d: IRI): NodeChecker = attempt => node => for {
     rdf <- getRDF
-    t <- condition(
-      hasDatatype(rdf, node, d),
-      attempt,
-      datatypeError(node, d, attempt),
-      s"$node has datatype $d")
+    b <- hasDatatype(rdf, node, d).handleErrorWith {
+      err => addNotEvidence(attempt, err, s"Error checking datatype ${d.show} for node ${node.show}") >> ok(false)
+    }
+    t <- condition(b,attempt, datatypeError(node, d, attempt),s"$node has datatype $d")
   } yield t
 
 
@@ -524,16 +524,16 @@ case class Validator(schema: Schema) extends LazyLogging {
       for {
         rdf <- getRDF
         subject = attempt.node
-        vs <- fromEither(rdf.triplesWithSubjectPredicate(subject, p).leftMap(MsgError(_)))
+        vs <- fromStreamIO(rdf.triplesWithSubjectPredicate(subject, p))
         os = vs.map(_.obj)
         t <- {
           logger.debug(s"Values: $vs")
           if (os.isEmpty) for {
-            t1 <- addNotEvidence(attempt,errorMaker(node,attempt,p,os),s"No values for node $subject with predicate $p")
+            t1 <- addNotEvidence(attempt,errorMaker(node,attempt,p,os.toSet),s"No values for node $subject with predicate $p")
           } yield (t1,false)
           else
           condition(os.forall(cond(node, _)), attempt,
-            errorMaker(node, attempt, p, os),
+            errorMaker(node, attempt, p, os.toSet),
             s"$node satisfies $name $p with values ${os})")
         }
       } yield t
@@ -746,7 +746,7 @@ case class Validator(schema: Schema) extends LazyLogging {
     logger.debug(s"checkClosed(ignored=$ignoredProperties, allowed=$allowedProperties")
     for {
       rdf <- getRDF
-      neighbours <- fromEither(rdf.triplesWithSubject(node).leftMap(MsgError(_)))
+      neighbours <- fromStreamIO(rdf.triplesWithSubject(node))
       predicates = neighbours.map(_.pred).toList
       notAllowed = predicates.diff(ignoredProperties).diff(allowedProperties)
       t <- {
@@ -803,7 +803,7 @@ case class Validator(schema: Schema) extends LazyLogging {
         s"Shape ${sref.showId} not found in schema. Available srefs: ${schema.shapesMap.keys.map(_.showId).mkString(",")}"))
     }
 
-  def validateAll(rdf: RDFReader): CheckResult[AbstractResult, (ShapeTyping, Boolean), Log] = {
+  def validateAll(rdf: RDFReader): IO[CheckResult[AbstractResult, (ShapeTyping, Boolean), Log]] = {
     runCheck(checkSchemaAll, rdf)
   }
 
@@ -882,12 +882,11 @@ case class Validator(schema: Schema) extends LazyLogging {
     value.matchNode(node)
   }
 
-  private def hasDatatype(rdf: RDFReader, node: RDFNode, d: IRI): Boolean = {
-    rdf.checkDatatype(node, d) match {
-      case Left(msg) => false
-      case Right(true) => true
-      case Right(false) => false
-    }
+  private def hasDatatype(rdf: RDFReader, node: RDFNode, d: IRI): Check[Boolean] = {
+    for {
+      eitherBoolean <- fromIO(rdf.checkDatatype(node, d).attempt)
+      b <- eitherBoolean.fold(_ => ok(false), ok(_))
+    } yield b
   }
 
   private[validator] def debug(msg: String): Check[Unit] = {
@@ -900,8 +899,8 @@ case class Validator(schema: Schema) extends LazyLogging {
 object Validator {
   def empty = Validator(schema = Schema.empty)
 
-  def validate(schema: Schema, rdf: RDFReader): Either[AbstractResult, (ShapeTyping, Boolean)] = {
-    Validator(schema).validateAll(rdf).result
+  def validate(schema: Schema, rdf: RDFReader): IO[Either[AbstractResult, (ShapeTyping, Boolean)]] = {
+    Validator(schema).validateAll(rdf).map(_.result)
   }
 
 }

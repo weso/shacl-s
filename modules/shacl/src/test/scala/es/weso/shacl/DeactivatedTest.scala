@@ -4,11 +4,10 @@ import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.shacl.converter.RDF2Shacl
 import es.weso.shacl.validator.Validator
 import org.scalatest._
-import cats.data.EitherT
-import cats.effect._
-import cats.implicits._
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should._
 
-class DeactivatedTest extends FunSpec with Matchers with TryValues with OptionValues
+class DeactivatedTest extends AnyFunSpec with Matchers with TryValues with OptionValues
   with SchemaMatchers {
 
   describe("deactivated") {
@@ -34,21 +33,16 @@ class DeactivatedTest extends FunSpec with Matchers with TryValues with OptionVa
             |:NotPerson sh:targetNode :carol .
             |  """.stripMargin
 
-      val r = for {
-        rdf    <- RDFAsJenaModel.fromStringIO(str, "TURTLE", None)
+      val r = RDFAsJenaModel.fromString(str, "TURTLE", None).flatMap(_.use(rdf => for {
         schema <- RDF2Shacl.getShacl(rdf)
-        result <- EitherT.fromEither[IO](Validator.validate(schema, rdf).leftMap(_.toString))
-      } yield result
+        result <- Validator.validate(schema, rdf)
+      } yield result))
 
-      r.value.unsafeRunSync.fold(
+      r.attempt.unsafeRunSync.fold(
         e => fail(s"Error reading: $e"),
-        pair => {
-        val (typing, ok) = pair
-        if (ok) {
-          info(s"Valid as expected")
-        } else {
-          fail(s"Not valid. Typing:\n$typing")
-        }
+        eitherResult => eitherResult match {
+          case Left(ar) => fail(s"Error: $ar")
+          case Right(pair) => info(s"Valid: ${pair}")
       })
     }
   }

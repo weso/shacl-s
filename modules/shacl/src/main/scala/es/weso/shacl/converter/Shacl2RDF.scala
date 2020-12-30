@@ -1,7 +1,7 @@
 package es.weso.shacl.converter
 
-import scala.util._
-import cats.data._
+//import scala.util._
+//import cats.data._
 import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf.nodes._
@@ -11,20 +11,21 @@ import es.weso.rdf._
 import es.weso.rdf.saver.RDFSaver
 import es.weso.shacl._
 import es.weso.shacl.report.Severity
+import cats.effect.IO
 
 class Shacl2RDF() extends RDFSaver with LazyLogging {
 
   def serialize(shacl: Schema,
                 format: String,
                 base: Option[IRI],
-                builder: RDFBuilder): Either[String, String] = {
-    val rdf: RDFBuilder = toRDF(shacl, builder)
-    rdf.serialize(format, base)
-  }
+                builder: RDFBuilder): IO[String] = for {
+    rdf <- toRDF(shacl, builder)
+    str <- rdf.serialize(format, base)
+  } yield str
 
-  def toRDF(shacl: Schema, initial: RDFBuilder): RDFBuilder = {
+  def toRDF(shacl: Schema, initial: RDFBuilder): IO[RDFBuilder] = {
     val result = schema(shacl).run(initial)
-    result.value._1
+    result.map(_._1)
   }
 
   private def schema(shacl: Schema): RDFSaver[Unit] = {
@@ -94,11 +95,11 @@ class Shacl2RDF() extends RDFSaver with LazyLogging {
   private def ignoredProperties(id: RDFNode, ignored: List[IRI]): RDFSaver[Unit] =
     if (!ignored.isEmpty) {
       for {
-        nodeList <- saveToRDFList(ignored, (iri: IRI) => State.pure(iri))
+        nodeList <- saveToRDFList(ignored, (iri: IRI) => ok(iri))
         _ <- addTriple(id, `sh:ignoredProperties`, nodeList)
       } yield ()
     } else
-      State.pure(())
+      ok(())
 
   private def propertyShape(ps: PropertyShape): RDFSaver[RDFNode] = {
     for {
@@ -183,11 +184,11 @@ class Shacl2RDF() extends RDFSaver with LazyLogging {
     case Pattern(p, flags) => addTriple(id, `sh:pattern`, StringLiteral(p)) >>
       (flags match {
         case Some(f) => addTriple(id, `sh:flags`, StringLiteral(f))
-        case None => State.pure(())
+        case None => ok(())
       })
     case UniqueLang(b) => addTriple(id, `sh:uniqueLang`, BooleanLiteral(b))
     case LanguageIn(langs) => for {
-      ls <- saveToRDFList(langs, (lang: String) => State.pure(StringLiteral(lang)))
+      ls <- saveToRDFList(langs, (lang: String) => ok(StringLiteral(lang)))
       _ <- addTriple(id, `sh:languageIn`, ls)
     } yield ()
     case Equals(p) => addTriple(id, `sh:equals`, p)
@@ -219,7 +220,7 @@ class Shacl2RDF() extends RDFSaver with LazyLogging {
     } yield ()
     case Closed(b, ignoredPs) => for {
       _ <- addTriple(id, `sh:closed`, BooleanLiteral(b))
-      nodeList <- saveToRDFList(ignoredPs, (iri: IRI) => State.pure(iri))
+      nodeList <- saveToRDFList(ignoredPs, (iri: IRI) => ok(iri))
       _ <- addTriple(id, `sh:ignoredProperties`, nodeList)
     } yield ()
     case NodeComponent(s) => for {
@@ -228,7 +229,7 @@ class Shacl2RDF() extends RDFSaver with LazyLogging {
     } yield ()
     case HasValue(v) => addTriple(id, `sh:hasValue`, v.rdfNode)
     case In(vs) => for {
-      nodeLs <- saveToRDFList(vs, (v: Value) => State.pure(v.rdfNode))
+      nodeLs <- saveToRDFList(vs, (v: Value) => ok(v.rdfNode))
       _ <- addTriple(id, `sh:in`, nodeLs)
     } yield ()
   }
@@ -236,7 +237,7 @@ class Shacl2RDF() extends RDFSaver with LazyLogging {
 }
 
 object Shacl2RDF {
-  def shacl2RDF(shacl: Schema, builder: RDFBuilder): RDFBuilder = {
+  def shacl2RDF(shacl: Schema, builder: RDFBuilder): IO[RDFBuilder] = {
     new Shacl2RDF().toRDF(shacl, builder)
   }
 }

@@ -1,12 +1,14 @@
 package es.weso.shacl.validator
 
 import cats._
+import cats.effect.IO
 import cats.implicits._
 import com.typesafe.scalalogging.LazyLogging
 import es.weso.rdf._
 import es.weso.checking.CheckerCats
 import es.weso.utils.internal.CollectionCompat._
 import es.weso.shacl.report.AbstractResult
+import fs2.Stream
 // import es.weso.utils.MyLogging
 
 object SHACLChecker extends CheckerCats with LazyLogging {
@@ -80,5 +82,9 @@ object SHACLChecker extends CheckerCats with LazyLogging {
     t <- getTyping
     r <- checkSequenceFlag(ls,t)
   } yield r
+
+ def fromStreamIO[A](ls: Stream[IO,A]): Check[LazyList[A]] = {
+   fromIO(ls.compile.to(LazyList))
+ }
 
 }

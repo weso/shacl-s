@@ -15,6 +15,9 @@ import cats.effect._
 import cats.data._
 import cats.implicits._
 import es.weso.rdf.parser._               
+import es.weso.utils.internal.CollectionCompat._
+import es.weso.rdf.triples.RDFTriple
+import fs2.Stream
 
 object RDF2Shacl extends RDFParser with LazyLogging {
 
@@ -97,8 +100,23 @@ private def getRDF_s: ShaclParser[RDFReader] =
 private def getNode_s: ShaclParser[RDFNode] = 
   StateT.liftF(getNode)
 
-private def fromEither_s[A](e: Either[Err,A]): ShaclParser[A] =
-  StateT.liftF(fromEither(e))
+ private def io2s[A](e: IO[A]): ShaclParser[A] =
+  StateT.liftF(liftIO(e)) 
+
+private def fromStream[A](e: Stream[IO,A]): ShaclParser[LazyList[A]] =
+  StateT.liftF(liftIO(e.compile.to(LazyList)))
+
+
+private def fromEitherS[A](e: Either[String,A]): ShaclParser[A] =
+  StateT.liftF(fromEither(e.leftMap(mkErr(_))))
+
+case class ShaclParserError(e: String) extends RuntimeException(e)
+
+private def mkErr(e: String): ShaclParserError = ShaclParserError(e)
+
+/*private def fromEitherShaclParser[A](e: Either[Err,A]): ShaclParser[A] =
+  StateT.liftF(fromEither(e)) */
+
 
 private def fromRDFParser[A](p: RDFParser[A]): ShaclParser[A] =
   StateT.liftF(p)
@@ -143,13 +161,13 @@ private def anyOf_s[A](ps: ShaclParser[A]*): ShaclParser[Seq[A]] = {
 */
 
 private def getShaclFromRDFReader(rdf: RDFReader): ShaclParser[Schema] = {
-    val pm = rdf.getPrefixMap
     for {
       sm <- shapesMap
       imports <- parseImports
       entailments <- parseEntailments
       parsedPropertyGroups <- getParsedPropertyGroups
       parsedShapeMap <- getShapesMap
+      pm <- io2s(rdf.getPrefixMap)
     } yield Schema(
       pm = pm,
       imports = imports,
@@ -159,40 +177,40 @@ private def getShaclFromRDFReader(rdf: RDFReader): ShaclParser[Schema] = {
     )
   }
 
-  private def cnv[A](v: IO[Either[String,A]]): EitherT[IO,String,A] = {
-    val r: EitherT[IO,String, Either[String, A]] = EitherT.liftF(v)
-    val s: EitherT[IO,String,A] = r.flatMap(e => e.fold(s => EitherT.leftT[IO,A](s), v => EitherT.pure[IO,String](v)))
-    s
-  }
-  
   /**
    * Parses RDF content and obtains a SHACL Schema and a PrefixMap
    */
   def getShacl(rdf: RDFBuilder,
                resolveImports: Boolean = true
-              ): EitherT[IO, String, Schema] = {
-    for {
-      extendedRdf <- if (resolveImports) EitherT.fromEither[IO](rdf.extendImports)
-                     else EitherT.pure[IO,String](rdf)
-      schema <- getShaclReader(extendedRdf)               
-//      pair <- cnv(getShaclFromRDFReader(extendedRdf).run(initialState).value.run(Config(initialNode,extendedRdf)))
-//      (_,schema) = pair
-    } yield schema
-  }
+              ): IO[Schema] = for {
+                rdfReader <- if (resolveImports) rdf.extendImports
+                             else IO.pure(rdf)
+                schema <- getShaclReader(rdfReader)
+              } yield schema
 
-  def getShaclReader(rdf: RDFReader): EitherT[IO,String, Schema] = 
-   for {
-    pair <- cnv(getShaclFromRDFReader(rdf).run(initialState).value.run(Config(initialNode,rdf)))
-    (_,schema) = pair
-   } yield schema
+  def runShaclParser[A](parser:ShaclParser[A], rdf:RDFReader): IO[A] =
+    for {
+     eitherValue <- parser.run(initialState).value.run(Config(initialNode,rdf))
+     value <- eitherValue.fold(
+       err => IO.raiseError[A](err),
+       pair => {
+         val (_,v) = pair
+         v.pure[IO]
+       }
+     )
+
+    } yield value
+
+  def getShaclReader(rdf: RDFReader): IO[Schema] =
+    runShaclParser(getShaclFromRDFReader(rdf), rdf)
 
   private def shapesMap: ShaclParser[Unit] = 
     for {
       rdf <- getRDF_s
-      nodeShapes <- fromEither_s(rdf.subjectsWithType(`sh:NodeShape`))
-      propertyShapes <- fromEither_s(rdf.subjectsWithType(`sh:PropertyShape`))
-      shapes <- fromEither_s(rdf.subjectsWithType(`sh:Shape`))
-      objectsPropertyShapes <- fromEither_s(rdf.subjectsWithProperty(`sh:property`))
+      nodeShapes <- fromStream[RDFNode](rdf.subjectsWithType(`sh:NodeShape`))
+      propertyShapes <- fromStream[RDFNode](rdf.subjectsWithType(`sh:PropertyShape`))
+      shapes <- fromStream[RDFNode](rdf.subjectsWithType(`sh:Shape`))
+      objectsPropertyShapes <- fromStream[RDFNode](rdf.subjectsWithProperty(`sh:property`))
       allShapes = nodeShapes ++ propertyShapes ++ shapes ++ objectsPropertyShapes
       _ <- addPendingNodes(allShapes.toList)
       // _ <- showStatus("shapesMap after addPending")
@@ -244,16 +262,18 @@ def shape: ShaclParser[RefNode] = for {
   private def parseEntailments: ShaclParser[List[IRI]] =
       for {
         rdf <- getRDF_s
-        ts <- fromEither_s(rdf.triplesWithPredicate(`sh:entailment`))
-        iris <- fromEither_s(sequence(ts.map(_.obj).toList.map(_.toIRI)))
+        ts <- fromStream[RDFTriple](rdf.triplesWithPredicate(`sh:entailment`))
+        iris <- fromEitherS(sequence(ts.map(_.obj).toList.map(_.toIRI)))
       } yield iris
 
   private def parseImports: ShaclParser[List[IRI]] =
     for {
      rdf <- getRDF_s 
-     ts <- fromEither_s(rdf.triplesWithPredicate(`owl:imports`))
-     os <- fromEither_s(sequence(ts.map(_.obj).toList.map(_.toIRI)))
-    } yield os
+     ts <- fromStream[RDFTriple](rdf.triplesWithPredicate(`owl:imports`))
+     os = ts.map(_.obj).toList 
+     iris <- fromEitherS(sequence(os.map(_.toIRI)))
+//     os <- fromEitherShaclParser(sequence(ts.map(_.obj).toList.map(_.toIRI)))
+    } yield iris
 
   /* private def mkId(n: RDFNode): Option[IRI] = n match {
     case iri: IRI => Some(iri)
@@ -277,7 +297,7 @@ def shape: ShaclParser[RefNode] = for {
     order <- fromRDFParser(parseOrder)
     severity <- fromRDFParser(parseSeverity)
     ignoredNodes <- fromRDFParser(rdfListForPredicateOptional(`sh:ignoredProperties`))
-    ignoredIRIs <- fromEither_s(nodes2iris(ignoredNodes))
+    ignoredIRIs <- fromEitherS(nodes2iris(ignoredNodes))
     classes <- fromRDFParser(objectsFromPredicate(`sh:class`))
     shape = NodeShape(
       id = n,
@@ -343,8 +363,7 @@ def shape: ShaclParser[RefNode] = for {
   } yield map
 
   private def cnvMessages(ns: Set[RDFNode]): RDFParser[MessageMap] = 
-    fromEither(MessageMap.fromRDFNodes(ns.toList))
-
+    fromEither(MessageMap.fromRDFNodes(ns.toList).leftMap(mkErr(_)))
 
   private def propertyShape: ShaclParser[RefNode] = for {
     rdf <- getRDF_s
@@ -366,7 +385,7 @@ def shape: ShaclParser[RefNode] = for {
     description <- fromRDFParser(parseMessage)
     group <- parsePropertyGroup
     order <- fromRDFParser(parseOrder)
-    ignoredIRIs <- fromEither_s(nodes2iris(ignoredNodes))
+    ignoredIRIs <- fromEitherS(nodes2iris(ignoredNodes))
     ps = PropertyShape(
       id = n,
       path = path,
@@ -414,7 +433,7 @@ def shape: ShaclParser[RefNode] = for {
     for {
      rdf <- getRDF 
      n <- getNode
-     ts <- fromEither(rdf.triplesWithSubjectPredicate(n, `rdf:type`))
+     ts <- fromRDFStream(rdf.triplesWithSubjectPredicate(n, `rdf:type`))
      shapeTypes = ts.map(_.obj)
      rdfs_Class = rdfs + "Class"
      r <- fromEither(if (shapeTypes.contains(rdfs_Class))
@@ -435,20 +454,20 @@ def shape: ShaclParser[RefNode] = for {
       vs <- fromEither(sequenceEither(ns.toList.map(mkTargetObjectsOf)))
     } yield vs
 
-  private def mkTargetNode(n: RDFNode): Either[String, TargetNode] =
+  private def mkTargetNode(n: RDFNode): Either[Err, TargetNode] =
     Right(TargetNode(n))
 
-  private def mkTargetClass(n: RDFNode): Either[String, TargetClass] =
+  private def mkTargetClass(n: RDFNode): Either[Err, TargetClass] =
     Right(TargetClass(n))
 
-  private def mkTargetSubjectsOf(n: RDFNode): Either[String, TargetSubjectsOf] = n match {
+  private def mkTargetSubjectsOf(n: RDFNode): Either[Err, TargetSubjectsOf] = n match {
     case i: IRI => Right(TargetSubjectsOf(i))
-    case _ => Left(s"targetSubjectsOf requires an IRI. Obtained $n")
+    case _ => Left(mkErr(s"targetSubjectsOf requires an IRI. Obtained $n"))
   }
 
-  private def mkTargetObjectsOf(n: RDFNode): Either[String, TargetObjectsOf] = n match {
+  private def mkTargetObjectsOf(n: RDFNode): Either[Err, TargetObjectsOf] = n match {
     case i: IRI => Right(TargetObjectsOf(i))
-    case _ => Left(s"targetObjectsOf requires an IRI. Obtained $n")
+    case _ => Left(mkErr(s"targetObjectsOf requires an IRI. Obtained $n"))
   }
 
   private def propertyShapes: ShaclParser[List[RefNode]] = 
@@ -582,13 +601,24 @@ def shape: ShaclParser[RefNode] = for {
     flags <- stringFromPredicateOptional(`sh:flags`)
   } yield Pattern(pat, flags)
 
-  private def languageIn: RDFParser[Component] = for {
+  private def languageIn: RDFParser[Component] = { 
+    def cnv(node: RDFNode): RDFParser[String] = node match {
+      case StringLiteral(str) => ok(str)
+      case _ => parseFail(s"Expected to be a string literal but got $node")
+    }
+    for {
+      nodes <- rdfListForPredicate(`sh:languageIn`)
+      ls <- nodes.map(cnv).sequence
+    } yield LanguageIn(ls)
+    /* for {
     rs <- rdfListForPredicate(`sh:languageIn`)
-    ls <- fromEither(sequenceEither(rs.map(n => n match {
-      case StringLiteral(str) => Right(str)
-      case _ => Left(s"Expected to be a string literal but got $n")
-    })))
-  } yield LanguageIn(ls)
+    vs: List[RDFParser[String]] = rs.map(n => n match {
+      case StringLiteral(str) => ok(str)
+      case _ => parseFail(s"Expected to be a string literal but got $n")
+    })
+    ls <- vs.sequence
+  } yield LanguageIn(ls) */
+  }
 
   private def uniqueLang: RDFParser[Component] = for {
     b <- booleanFromPredicate(`sh:uniqueLang`)
@@ -661,13 +691,13 @@ def shape: ShaclParser[RefNode] = for {
   private def hasValue: RDFParser[Component] = 
     for {
       o <- objectFromPredicate(`sh:hasValue`)
-      v <- fromEither(node2Value(o))
+      v <- fromEither(node2Value(o).leftMap(mkErr(_)))
     } yield HasValue(v)
 
   private def in: RDFParser[Component] = 
     for {
       ns <- rdfListForPredicate(`sh:in`)
-      vs <- fromEither(convert2Values(ns.map(node2Value(_))))
+      vs <- fromEither(convert2Values(ns.map(node2Value(_))).leftMap(mkErr(_)))
     } yield In(vs)
 
   private def node2Value(n: RDFNode): Either[String, Value] = {
@@ -692,9 +722,9 @@ def shape: ShaclParser[RefNode] = for {
       nk <- fromEither(parseNodeKind(os))
     } yield List(nk)
 
-  private def parseNodeKind(os: Set[RDFNode]): Either[String, Component] = {
+  private def parseNodeKind(os: Set[RDFNode]): Either[Err, Component] = {
     os.size match {
-      case 0 => Left("no iriObjects of nodeKind property")
+      case 0 => Left(mkErr("no iriObjects of nodeKind property"))
       case 1 => {
         os.head match {
           case nk: IRI => nk match {
@@ -706,16 +736,16 @@ def shape: ShaclParser[RefNode] = for {
             case `sh:IRIOrLiteral` => Right(NodeKind(IRIOrLiteral))
             case x => {
               logger.error(s"incorrect value of nodeKind property $x")
-              Left(s"incorrect value of nodeKind property $x")
+              Left(mkErr(s"incorrect value of nodeKind property $x"))
             }
           }
           case x => {
             logger.error(s"incorrect value of nodeKind property $x")
-            Left(s"incorrect value of nodeKind property $x")
+            Left(mkErr(s"incorrect value of nodeKind property $x"))
           }
         }
       }
-      case n => Left(s"iriObjects of nodeKind property > 1. $os")
+      case n => Left(mkErr(s"iriObjects of nodeKind property > 1. $os"))
     }
   }
 

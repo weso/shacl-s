@@ -1,6 +1,8 @@
 package es.weso.shacl
 
 import org.scalatest._
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should._
 import es.weso.rdf.nodes._
 import es.weso.rdf.jena.RDFAsJenaModel
 // import es.weso.rdf._
@@ -9,7 +11,7 @@ import util._
 import es.weso.shacl.converter.RDF2Shacl
 import es.weso.shacl.validator.Validator
 
-class ValidatorTest extends FunSpec with Matchers with TryValues with OptionValues
+class ValidatorTest extends AnyFunSpec with Matchers with TryValues with OptionValues
   with SchemaMatchers {
 
   describe("Validator target Nodes") {
@@ -22,11 +24,10 @@ class ValidatorTest extends FunSpec with Matchers with TryValues with OptionValu
                  |:S a sh:Shape; sh:targetNode :x, :y .
                  |:T a sh:Shape; sh:targetNode :z .
                  |""".stripMargin
-      val attempt = for {
-        rdf <- RDFAsJenaModel.fromStringIO(str, "TURTLE")
+      val cmp = RDFAsJenaModel.fromString(str, "TURTLE").flatMap(_.use(rdf => for {
         schema <- RDF2Shacl.getShacl(rdf)
-      } yield (rdf, schema)
-      attempt.value.unsafeRunSync match {
+      } yield (rdf, schema)))
+      cmp.attempt.unsafeRunSync match {
         case Left(e) => fail(s"Error: $e")
         case Right((rdf,schema)) => {
           val S = ex + "S"
@@ -60,14 +61,15 @@ class ValidatorTest extends FunSpec with Matchers with TryValues with OptionValu
                  |:good2 :p 1, 2 .
                  |:bad1 :q 1 .
                  |""".stripMargin
-      val attempt = for {
-        rdf <- RDFAsJenaModel.fromStringIO(str, "TURTLE")
+      val cmp = RDFAsJenaModel.fromString(str, "TURTLE").flatMap(_.use(rdf => for {
         schema <- RDF2Shacl.getShacl(rdf)
-      } yield (rdf, schema)
-      attempt.value.unsafeRunSync.fold(e => fail(s"Error: $e"),
-       pair => 
-     { 
-      val (rdf,schema)=pair
+        validator = Validator(schema)
+        checked <- validator.validateAll(rdf)
+      } yield (rdf, schema, validator,checked)))
+      cmp.attempt.unsafeRunSync.fold(
+        e => fail(s"Error: $e"),
+        pair => {
+      val (rdf,schema, validator, checked) = pair
       val S = ex + "S"
       val PS = ex + "PS"
       val x = ex + "x"
@@ -79,9 +81,8 @@ class ValidatorTest extends FunSpec with Matchers with TryValues with OptionValu
       val s = Shape.empty(S).copy(
         targets = Seq(TargetNode(x)),
         propertyShapes = psRefs)
-      val validator = Validator(schema)
+
       validator.targetNodes should contain only ((x, s))
-      val checked = validator.validateAll(rdf)
       checked.isOK should be(true)
     }
     )}
@@ -93,14 +94,17 @@ class ValidatorTest extends FunSpec with Matchers with TryValues with OptionValu
       val str = s"""|@prefix : $ex
                 |:x :p 1 .
                 |""".stripMargin
-      val eitherRdf = RDFAsJenaModel.fromChars(str, "TURTLE")
-      eitherRdf.fold(e => fail(s"Error: $e"),
-        rdf => {
-     // val x = ex + "x"
-     //  val p = ex + "p"
-      val validator = Validator(Schema.empty)
-      val checked = validator.validateAll(rdf)
-      checked.isOK should be(true)
+      val eitherRdf = RDFAsJenaModel.fromChars(str, "TURTLE").flatMap(_.use(rdf => {
+        val validator = Validator(Schema.empty)
+        for {
+        checked <- validator.validateAll(rdf)
+      } yield (rdf,checked)}))
+
+      eitherRdf.attempt.unsafeRunSync().fold(
+        e => fail(s"Error: $e"),
+        pair => {
+          val (rdf,checked) = pair
+          checked.isOK should be(true)
         })
     }
 

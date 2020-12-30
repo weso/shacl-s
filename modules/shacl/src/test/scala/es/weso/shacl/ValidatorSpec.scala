@@ -1,6 +1,6 @@
 package es.weso.shacl
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should._
 
-import org.scalatest._
-
-class ValidatorSpec extends FunSpec with Matchers {
+class ValidatorSpec extends AnyFunSpec with Matchers {
 }
