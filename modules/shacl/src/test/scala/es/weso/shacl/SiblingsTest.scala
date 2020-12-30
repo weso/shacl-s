@@ -4,12 +4,15 @@ import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.nodes._
 import es.weso.shacl.converter.RDF2Shacl
 import org.scalatest._
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should._
 
-class SiblingsTest extends FunSpec
+
+class SiblingsTest extends AnyFunSpec
   with Matchers with EitherValues with OptionValues {
 
   val ex = "http://example.org/"
-  val str =
+  val str: String =
     s"""|prefix :       <$ex>
         |prefix sh:     <http://www.w3.org/ns/shacl#>
         |prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
@@ -47,25 +50,23 @@ class SiblingsTest extends FunSpec
         |  sh:hasValue :female
         |] .
         |""".stripMargin
-  val psFemale = IRI(ex + "PsFemale")
-  val psMale = IRI(ex + "PsMale")
-  val maleShape = IRI(ex + "MaleShape")
-  val femaleShape = IRI(ex + "FemaleShape")
-  val marriage = IRI(ex + "Marriage")
+  val psFemale: IRI = IRI(ex + "PsFemale")
+  val psMale: IRI = IRI(ex + "PsMale")
+  val maleShape: IRI = IRI(ex + "MaleShape")
+  val femaleShape: IRI = IRI(ex + "FemaleShape")
+  val marriage: IRI = IRI(ex + "Marriage")
 
   describe("Parent") {
 
     it("should be able to find parent of a shape") {
-      val eitherParents = for {
-        rdf <- RDFAsJenaModel.fromStringIO(str, "TURTLE")
+      val eitherParents = RDFAsJenaModel.fromString(str, "TURTLE").flatMap(_.use(rdf => for {
         schema <- RDF2Shacl.getShacl(rdf)
-      } yield schema.parents(RefNode(psFemale))
+      } yield schema.parents(RefNode(psFemale))))
 
-      eitherParents.value.unsafeRunSync match {
-        case Right(ps) => {
+      eitherParents.attempt.unsafeRunSync match {
+        case Right(ps) =>
           info(s"Parents found: $ps")
-          ps should contain only (RefNode(marriage))
-        }
+          ps should contain only RefNode(marriage)
         case Left(e) => fail(e)
       }
     }
@@ -73,16 +74,14 @@ class SiblingsTest extends FunSpec
     describe("SiblingQualifiedValueShapes") {
       it("should be able to find siblings of a shape") {
 
-        val eitherShapes = for {
-          rdf <- RDFAsJenaModel.fromStringIO(str, "TURTLE")
+        val eitherShapes = RDFAsJenaModel.fromString(str, "TURTLE").flatMap(_.use(rdf => for {
           schema <- RDF2Shacl.getShacl(rdf)
-        } yield (schema.siblingQualifiedShapes(RefNode(psFemale)))
+        } yield schema.siblingQualifiedShapes(RefNode(psFemale))))
 
-        eitherShapes.value.unsafeRunSync match {
-          case Right(ss) => {
+        eitherShapes.attempt.unsafeRunSync match {
+          case Right(ss) =>
             info(s"Siblings found: $ss")
-            ss.map(_.id) should contain only (maleShape)
-          }
+            ss.map(_.id) should contain only maleShape
           case Left(msg) => fail(msg)
         }
       }

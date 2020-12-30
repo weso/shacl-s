@@ -4,7 +4,7 @@ import java.io._
 import java.nio.file.{Path, Paths}
 
 import com.typesafe.config.{Config => TConfig, _}
-import es.weso.rdf.{RDFBuilder, RDFReader}
+import es.weso.rdf._
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.nodes.{IRI, RDFNode}
 import es.weso.rdf.parser.RDFParser
@@ -12,13 +12,17 @@ import es.weso.shacl.converter.RDF2Shacl
 import es.weso.shacl.{Schema, Shacl, manifest}
 import es.weso.shacl.manifest._
 import es.weso.shacl.validator.Validator
-import org.scalatest.{FunSpec, Matchers}
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should._
 import es.weso.shacl.manifest.{Manifest, ManifestAction, Result => ManifestResult, _}
-import cats.data.EitherT
+// import cats._
+// import cats.data._ 
+import cats.implicits._
 import cats.effect._
+
 // import scala.util.{Either, Left, Right}
 
-class ReportGeneratorCompatTest extends FunSpec with Matchers with RDFParser {
+class ReportGeneratorCompatTest extends AnyFunSpec with Matchers with RDFParser {
 
   val conf: TConfig = ConfigFactory.load()
 //  val manifestFile = new File(conf.getString("manifestFile"))
@@ -54,64 +58,81 @@ class ReportGeneratorCompatTest extends FunSpec with Matchers with RDFParser {
   def describeManifest(name: RDFNode, parentFolder: Path): Unit = name match {
     case iri: IRI => {
       val fileName = Paths.get(parentFolder.toUri.resolve(iri.uri)).toString
-      RDF2Manifest.read(fileName, "TURTLE", Some(fileName), false).value.unsafeRunSync match {
+      val cmp: IO[Unit] = RDF2Manifest.read(fileName, "TURTLE", Some(fileName), false).flatMap(_.use(
+        manifest => {
+          val newParent      = Paths.get(parentFolder.toUri.resolve(iri.uri))
+          processManifest(manifest, name.getLexicalForm, newParent) // , rdfReader)
+        }
+      ))
+      cmp.unsafeRunSync
+      
+/*      .value.unsafeRunSync match {
         case Left(e) => {
             fail(s"Error reading manifestTest file:$e")
         }
         case Right(pair) => {
           val (m, rdfReader) = pair
-          val newParent      = Paths.get(parentFolder.toUri.resolve(iri.uri))
-          processManifest(m, name.getLexicalForm, newParent, rdfReader)
+          
         }
-      }
+      } */
     }
     case _ => println(s"describeManifest: Unsupported non-IRI node $name")
   }
-  def processManifest(m: Manifest, name: String, parentFolder: Path, rdfManifest: RDFBuilder): Unit = {
+
+  def processManifest(m: Manifest, 
+                      name: String, 
+                      parentFolder: Path,
+                      // rdfManifest: RDFBuilder
+                      ): IO[Unit] = {
     for ((includeNode, manifest) <- m.includes) {
       describeManifest(includeNode, parentFolder)
     }
-    for (e <- m.entries)
-      processEntry(e, name, parentFolder, rdfManifest)
+    val vs: List[IO[Unit]] = m.entries.map(processEntry(_, name, parentFolder) //, rdfManifest)
+    )
+    vs.sequence.map(_ => ())  
   }
 
-  def processEntry(e: manifest.Entry, name: String, parentFolder: Path, rdfManifest: RDFBuilder): Unit = {
-    getSchemaRdf(e.action, name, parentFolder, rdfManifest).value.unsafeRunSync match {
-        case Left(f) => {
-          fail(s"Error processing Entry: $e \n $f")
-        }
-        case Right((schema, rdf)) => {
-          val testUri = (new java.net.URI("urn:x-shacl-test:/" + parentFolder.getFileName + "/" + e.node.getLexicalForm)).toString
-          validate(schema, rdf, e.result, testUri)
-        }
-      }
+  def processEntry(
+    e: manifest.Entry, 
+    name: String, 
+    parentFolder: Path 
+    // , rdfManifest: RDFBuilder
+    ): IO[Unit] = {
+    val testUri = (new java.net.URI("urn:x-shacl-test:/" + parentFolder.getFileName + "/" + e.node.getLexicalForm)).toString
+    val r: IO[Unit] = getData(e.action,name,parentFolder //,rdfManifest
+                             ).flatMap(_.use(rdf => for {
+      schema <- getSchema(e.action, name, parentFolder // , rdfManifest
+                         )
+      _ <- IO(validate(schema, rdf, e.result, testUri))
+    } yield ()))
+    r
   }
 
-  def getSchemaRdf(a: ManifestAction,
+/*  def getSchema(a: ManifestAction,
                    fileName: String,
                    parentFolder: Path,
                    manifestRdf: RDFBuilder
-                  ): EitherT[IO,String, (Schema,RDFReader)] = {
+                  ): IO[Schema] = {
    for {
-    pair <- getSchema(a, fileName, parentFolder, manifestRdf)
-    (schema, schemaRdf) = pair
-    dataRdf <- getData(a, fileName, parentFolder, manifestRdf, schemaRdf)
+    schema <- getSchema(a, fileName, parentFolder, manifestRdf)
+//    dataRdf <- getData(a, fileName, parentFolder, manifestRdf, schemaRdf)
    } yield {
-     (schema, dataRdf)
+     schema // , dataRdf)
    }
- }
+ } */
 
-  def getData(a: ManifestAction, fileName: String, parentFolder: Path, manifestRdf: RDFReader, schemaRdf: RDFReader): EitherT[IO,String, RDFReader] =
-  {
-    a.data match {
-      case None => EitherT.pure[IO,String](RDFAsJenaModel.empty)
-      case Some(iri) if iri.isEmpty => EitherT.pure[IO,String](manifestRdf)
+  def getData(action: ManifestAction, 
+              fileName: String, 
+              parentFolder: Path
+              // , manifestRdf: RDFReader
+              ): IO[Resource[IO,RDFReader]] = {
+    action.data match {
+      case None => RDFAsJenaModel.empty
+      // case Some(iri) if iri.isEmpty => Resource.pure[IO,RDFReader](manifestRdf)
       case Some(iri) => {
         val dataFileName = Paths.get(parentFolder.toUri.resolve(iri.uri)).toFile
-        val dataFormat  = a.dataFormat.getOrElse(Shacl.defaultFormat)
-        for {
-          rdf <- RDFAsJenaModel.fromFileIO(dataFileName, dataFormat).map(_.normalizeBNodes)
-        } yield rdf
+        val dataFormat  = action.dataFormat.getOrElse(Shacl.defaultFormat)
+        RDFAsJenaModel.fromFile(dataFileName, dataFormat)
       }
     }
   }
@@ -119,37 +140,37 @@ class ReportGeneratorCompatTest extends FunSpec with Matchers with RDFParser {
   def getSchema(a: ManifestAction,
                 fileName: String,
                 parentFolder: Path,
-                manifestRdf: RDFBuilder
-               ): EitherT[IO, String, (Schema, RDFReader)] = {
+                // manifestRdf: RDFBuilder
+               ): IO[Schema] = {
     a.schema match {
       case None => {
         info(s"No data in manifestAction $a")
-        EitherT.pure[IO,String]((Schema.empty, RDFAsJenaModel.empty))
+        IO(Schema.empty) 
       }
-      case Some(iri) if iri.isEmpty => for {
+/*      case Some(iri) if iri.isEmpty => for {
         schema <- RDF2Shacl.getShacl(manifestRdf)
-      } yield (schema, manifestRdf)
+      } yield schema */
       case Some(iri) => {
         val schemaFile = Paths.get(parentFolder.toUri.resolve(iri.uri)).toFile
         val schemaFormat = a.dataFormat.getOrElse(Shacl.defaultFormat)
-        for {
-          schemaRdf <- RDFAsJenaModel.fromFileIO(schemaFile, schemaFormat).map(_.normalizeBNodes)
+        RDFAsJenaModel.fromFile(schemaFile, schemaFormat).flatMap(_.use(schemaRdf => for {
           schema <- {
             RDF2Shacl.getShacl(schemaRdf)
           }
-        } yield (schema, schemaRdf)
+        } yield schema))
       }
     }
   }
 
 
 
-    def validate(schema: Schema, rdf: RDFReader,
+    def validate(schema: Schema, 
+                 rdf: RDFReader,
                  expectedResult: ManifestResult,
                  testUri: String
                 ): Unit = {
       val validator = Validator(schema)
-      val result = validator.validateAll(rdf)
+      val result = validator.validateAll(rdf).unsafeRunSync()
       numTests += 1
       expectedResult match {
         case ReportResult(rep) => {

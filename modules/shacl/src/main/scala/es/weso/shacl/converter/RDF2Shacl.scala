@@ -100,11 +100,11 @@ private def getRDF_s: ShaclParser[RDFReader] =
 private def getNode_s: ShaclParser[RDFNode] = 
   StateT.liftF(getNode)
 
-/* private def fromIO[A](e: IO[A]): ShaclParser[A] =
-  StateT.liftF(liftIO(e)) */
+ private def io2s[A](e: IO[A]): ShaclParser[A] =
+  StateT.liftF(liftIO(e)) 
 
 private def fromStream[A](e: Stream[IO,A]): ShaclParser[LazyList[A]] =
-  StateT.liftF(liftIO(e.compile.to[LazyList]))
+  StateT.liftF(liftIO(e.compile.to(LazyList)))
 
 
 private def fromEitherS[A](e: Either[String,A]): ShaclParser[A] =
@@ -161,13 +161,13 @@ private def anyOf_s[A](ps: ShaclParser[A]*): ShaclParser[Seq[A]] = {
 */
 
 private def getShaclFromRDFReader(rdf: RDFReader): ShaclParser[Schema] = {
-    val pm = rdf.getPrefixMap
     for {
       sm <- shapesMap
       imports <- parseImports
       entailments <- parseEntailments
       parsedPropertyGroups <- getParsedPropertyGroups
       parsedShapeMap <- getShapesMap
+      pm <- io2s(rdf.getPrefixMap)
     } yield Schema(
       pm = pm,
       imports = imports,
@@ -182,20 +182,26 @@ private def getShaclFromRDFReader(rdf: RDFReader): ShaclParser[Schema] = {
    */
   def getShacl(rdf: RDFBuilder,
                resolveImports: Boolean = true
-              ): EitherT[IO, String, Schema] = for {
-                rdfReader <- if (resolveImports) EitherT.liftF(rdf.extendImports)
-                             else EitherT.pure[IO,String](rdf)
+              ): IO[Schema] = for {
+                rdfReader <- if (resolveImports) rdf.extendImports
+                             else IO.pure(rdf)
                 schema <- getShaclReader(rdfReader)
               } yield schema
 
-  def runShaclParser[A](parser:ShaclParser[A], rdf:RDFReader): EitherT[IO,String,A] = {
-    val v: IO[Either[Throwable,(ParserState,A)]] = parser.run(initialState).value.run(Config(initialNode,rdf))
-    val v1 : IO[Either[String,A]] = v.map(_.leftMap(_.getMessage).map(_._2))
-    EitherT(v1)
-  }
-    
+  def runShaclParser[A](parser:ShaclParser[A], rdf:RDFReader): IO[A] =
+    for {
+     eitherValue <- parser.run(initialState).value.run(Config(initialNode,rdf))
+     value <- eitherValue.fold(
+       err => IO.raiseError[A](err),
+       pair => {
+         val (_,v) = pair
+         v.pure[IO]
+       }
+     )
 
-  def getShaclReader(rdf: RDFReader): EitherT[IO,String, Schema] = 
+    } yield value
+
+  def getShaclReader(rdf: RDFReader): IO[Schema] =
     runShaclParser(getShaclFromRDFReader(rdf), rdf)
 
   private def shapesMap: ShaclParser[Unit] = 

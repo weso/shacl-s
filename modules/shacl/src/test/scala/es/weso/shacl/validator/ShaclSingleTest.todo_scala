@@ -9,14 +9,17 @@ import es.weso.rdf.nodes.IRI
 import es.weso.shacl.converter.RDF2Shacl
 import es.weso.shacl.manifest.{Manifest, ManifestAction, Result => ManifestResult, _}
 import es.weso.shacl.{Schema, SchemaMatchers, Shacl, manifest}
+
 import org.scalatest._
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should._
 
 import scala.collection.mutable
 import scala.util._
 import cats.data.EitherT
 import cats.effect._
 
-class ShaclSingleTest extends FunSpec with Matchers with TryValues with OptionValues with SchemaMatchers {
+class ShaclSingleTest extends AnyFunSpec with Matchers with TryValues with OptionValues with SchemaMatchers {
 
   val conf: Config = ConfigFactory.load()
   val shaclFolder = conf.getString("shaclCore") + "/node"

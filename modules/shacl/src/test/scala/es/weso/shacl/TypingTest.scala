@@ -2,8 +2,10 @@ package es.weso.shacl
 
 import org.scalatest._
 import es.weso.typing._
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
-class TypingTest extends FunSpec with Matchers with TryValues with OptionValues {
+class TypingTest extends AnyFunSpec with Matchers with TryValues with OptionValues {
 
   describe("Typing") {
 

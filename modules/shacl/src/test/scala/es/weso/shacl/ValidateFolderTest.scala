@@ -7,13 +7,16 @@ import es.weso.shacl.converter.RDF2Shacl
 import es.weso.shacl.validator.Validator
 import es.weso.utils.FileUtils._
 import org.scalatest._
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should._
+
 import scala.io.Source
-import cats.data.EitherT
+// import cats.data.EitherT
 import cats.effect._
-import cats.implicits._
+// import cats.implicits._
 
 class ValidateFolderTest
-  extends FunSpec with Matchers with TryValues with OptionValues
+  extends AnyFunSpec with Matchers with TryValues with OptionValues
   with SchemaMatchers {
 
   val conf: Config = ConfigFactory.load()
@@ -38,12 +41,13 @@ class ValidateFolderTest
   }
 
   def validate(name: String, str: String): Unit = {
-    val attempt = for {
-      rdf <- RDFAsJenaModel.fromStringIO(str, "TURTLE")
+    val cmp = RDFAsJenaModel.fromString(str, "TURTLE").flatMap(_.use(rdf => for {
       schema <- RDF2Shacl.getShacl(rdf)
-      result <- EitherT.fromEither[IO](Validator.validate(schema, rdf).leftMap(_.toString))
-    } yield result
-    attempt.fold(e => fail(s"Error validating $name: $e"),
+      eitherResult <- Validator.validate(schema, rdf)
+      result <- eitherResult.fold(err => IO.raiseError(new RuntimeException(s"Error: ${err}")), IO.pure(_))
+    } yield result))
+    cmp.attempt.unsafeRunSync().fold(
+      e => fail(s"Error validating $name: $e"),
       result => {
         val (typing,ok) = result
         if (!ok) {
