@@ -8,10 +8,10 @@ import es.weso.typing._
 
 case class ShapeTyping(t: Typing[RDFNode, Shape, AbstractResult, String]) {
 
-  def getNodes: Seq[RDFNode] = t.getKeys
+  def getNodes: Seq[RDFNode] = t.getKeys.toSeq
 
-  def getMap : Map[RDFNode, Map[Shape, TypingResult[AbstractResult, String]]] =
-    t.getMap
+  def getMap : Map[RDFNode, scala.collection.Map[Shape, TypingResult[AbstractResult, String]]] =
+    t.getMap.toMap
 
   def hasType(node: RDFNode, shape: Shape): Boolean =
     t.hasType(node,shape)
@@ -26,10 +26,10 @@ case class ShapeTyping(t: Typing[RDFNode, Shape, AbstractResult, String]) {
     ShapeTyping(t.addNotEvidence(node,shape,e))
 
   def getFailedValues(node: RDFNode): Set[Shape] =
-    t.getFailedValues(node)
+    t.getFailedValues(node).toSet
 
   def getOkValues(node: RDFNode): Set[Shape] =
-    t.getOkValues(node)
+    t.getOkValues(node).toSet
 
   def toValidationReport: ValidationReport = {
     ValidationReport(
