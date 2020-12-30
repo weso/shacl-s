@@ -4,7 +4,7 @@ import java.io._
 import java.nio.file.{Path, Paths}
 
 import com.typesafe.config.{Config => TConfig, _}
-import es.weso.rdf.{RDFBuilder, RDFReader}
+import es.weso.rdf._
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.nodes.{IRI, RDFNode}
 import es.weso.rdf.parser.RDFParser
@@ -15,8 +15,8 @@ import es.weso.shacl.validator.Validator
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should._
 import es.weso.shacl.manifest.{Manifest, ManifestAction, Result => ManifestResult, _}
-import cats._
-import cats.data._ 
+// import cats._
+// import cats.data._ 
 import cats.implicits._
 import cats.effect._
 
@@ -58,12 +58,12 @@ class ReportGeneratorCompatTest extends AnyFunSpec with Matchers with RDFParser 
   def describeManifest(name: RDFNode, parentFolder: Path): Unit = name match {
     case iri: IRI => {
       val fileName = Paths.get(parentFolder.toUri.resolve(iri.uri)).toString
-      val cmp: IO[Unit] = RDF2Manifest.read(fileName, "TURTLE", Some(fileName), false).use(
+      val cmp: IO[Unit] = RDF2Manifest.read(fileName, "TURTLE", Some(fileName), false).flatMap(_.use(
         manifest => {
           val newParent      = Paths.get(parentFolder.toUri.resolve(iri.uri))
           processManifest(manifest, name.getLexicalForm, newParent) // , rdfReader)
         }
-      )
+      ))
       cmp.unsafeRunSync
       
 /*      .value.unsafeRunSync match {
@@ -100,11 +100,11 @@ class ReportGeneratorCompatTest extends AnyFunSpec with Matchers with RDFParser 
     ): IO[Unit] = {
     val testUri = (new java.net.URI("urn:x-shacl-test:/" + parentFolder.getFileName + "/" + e.node.getLexicalForm)).toString
     val r: IO[Unit] = getData(e.action,name,parentFolder //,rdfManifest
-                             ).use(rdf => for {
+                             ).flatMap(_.use(rdf => for {
       schema <- getSchema(e.action, name, parentFolder // , rdfManifest
                          )
       _ <- IO(validate(schema, rdf, e.result, testUri))
-    } yield ())
+    } yield ()))
     r
   }
 
@@ -125,7 +125,7 @@ class ReportGeneratorCompatTest extends AnyFunSpec with Matchers with RDFParser 
               fileName: String, 
               parentFolder: Path
               // , manifestRdf: RDFReader
-              ): Resource[IO,RDFReader] = {
+              ): IO[Resource[IO,RDFReader]] = {
     action.data match {
       case None => RDFAsJenaModel.empty
       // case Some(iri) if iri.isEmpty => Resource.pure[IO,RDFReader](manifestRdf)
@@ -153,11 +153,11 @@ class ReportGeneratorCompatTest extends AnyFunSpec with Matchers with RDFParser 
       case Some(iri) => {
         val schemaFile = Paths.get(parentFolder.toUri.resolve(iri.uri)).toFile
         val schemaFormat = a.dataFormat.getOrElse(Shacl.defaultFormat)
-        RDFAsJenaModel.fromFile(schemaFile, schemaFormat).use(schemaRdf => for {
+        RDFAsJenaModel.fromFile(schemaFile, schemaFormat).flatMap(_.use(schemaRdf => for {
           schema <- {
             RDF2Shacl.getShacl(schemaRdf)
           }
-        } yield schema)
+        } yield schema))
       }
     }
   }

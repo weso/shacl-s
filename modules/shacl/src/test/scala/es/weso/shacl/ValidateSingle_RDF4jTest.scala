@@ -10,9 +10,9 @@ import org.scalatest._
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should._
 
-import cats.data.EitherT
+// import cats.data.EitherT
 import cats.effect._
-import cats.implicits._
+// import cats.implicits._
 import scala.io.Source
 import scala.util._
 
