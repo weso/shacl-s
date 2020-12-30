@@ -1,6 +1,6 @@
 addSbtPlugin("com.eed3si9n"      % "sbt-unidoc"          % "0.4.3")
 addSbtPlugin("com.eed3si9n"      % "sbt-assembly"        % "0.15.0")
-addSbtPlugin("com.eed3si9n"      % "sbt-buildinfo"       % "0.9.0")
+addSbtPlugin("com.eed3si9n"      % "sbt-buildinfo"       % "0.10.0")
 // addSbtPlugin("com.typesafe.sbt"  % "sbt-twirl"           % "1.4.2")
 addSbtPlugin("com.typesafe.sbt"  % "sbt-site"            % "1.4.1")
 addSbtPlugin("com.typesafe.sbt"  % "sbt-ghpages"         % "0.6.3")
