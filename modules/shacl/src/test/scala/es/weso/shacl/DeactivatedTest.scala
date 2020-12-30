@@ -33,10 +33,10 @@ class DeactivatedTest extends AnyFunSpec with Matchers with TryValues with Optio
             |:NotPerson sh:targetNode :carol .
             |  """.stripMargin
 
-      val r = RDFAsJenaModel.fromString(str, "TURTLE", None).use(rdf => for {
+      val r = RDFAsJenaModel.fromString(str, "TURTLE", None).flatMap(_.use(rdf => for {
         schema <- RDF2Shacl.getShacl(rdf)
         result <- Validator.validate(schema, rdf)
-      } yield result)
+      } yield result))
 
       r.attempt.unsafeRunSync.fold(
         e => fail(s"Error reading: $e"),

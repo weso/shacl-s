@@ -23,9 +23,9 @@ class RDF2ShaclTest extends AnyFunSpec with Matchers with TryValues with EitherV
                  |
                  |:S a sh:Shape .
                  |""".stripMargin
-      val cmp: IO[Schema] = RDFAsJenaModel.fromString(str, "TURTLE").use(rdf => for {
+      val cmp: IO[Schema] = RDFAsJenaModel.fromString(str, "TURTLE").flatMap(_.use(rdf => for {
         schema <- RDF2Shacl.getShacl(rdf)
-      } yield schema)
+      } yield schema))
       val s = ex + "S"
       cmp.attempt.unsafeRunSync match {
         case Left(e) => fail(s"Failed: $e")
@@ -42,9 +42,9 @@ class RDF2ShaclTest extends AnyFunSpec with Matchers with TryValues with EitherV
                  |:S a sh:Shape .
                  |:T a sh:Shape .
                  |""".stripMargin
-      val cmp: IO[Schema] = RDFAsJenaModel.fromString(str, "TURTLE").use(rdf => for {
+      val cmp: IO[Schema] = RDFAsJenaModel.fromString(str, "TURTLE").flatMap(_.use(rdf => for {
         schema <- RDF2Shacl.getShacl(rdf)
-      } yield schema)
+      } yield schema))
       val s = ex + "S"
       val t = ex + "T"
       cmp.attempt.unsafeRunSync match {
@@ -64,10 +64,10 @@ class RDF2ShaclTest extends AnyFunSpec with Matchers with TryValues with EitherV
                  |""".stripMargin
       val s = ex + "S"
       val n1 = ex + "n1"
-      val cmp: IO[Shape] = RDFAsJenaModel.fromString(str, "TURTLE").use(rdf => for {
+      val cmp: IO[Shape] = RDFAsJenaModel.fromString(str, "TURTLE").flatMap(_.use(rdf => for {
         schema <- RDF2Shacl.getShacl(rdf)
         shape <- IOUtils.fromES(schema.shape(s))
-      } yield shape)
+      } yield shape))
       cmp.attempt.unsafeRunSync match {
         case Left(e) => fail(s"Failed $e")
         case Right(shape) =>
@@ -89,9 +89,9 @@ class RDF2ShaclTest extends AnyFunSpec with Matchers with TryValues with EitherV
       val s1 = ex + "s1"
       val s2 = ex + "s2"
       val t1 = ex + "t1"
-      val cmp = RDFAsJenaModel.fromString(str, "TURTLE").use(rdf => for {
+      val cmp = RDFAsJenaModel.fromString(str, "TURTLE").flatMap(_.use(rdf => for {
         schema <- RDF2Shacl.getShacl(rdf)
-      } yield schema)
+      } yield schema))
       cmp.attempt.unsafeRunSync match {
         case Left(e) => fail(s"Failed $e")
         case Right(schema) =>
@@ -113,10 +113,10 @@ class RDF2ShaclTest extends AnyFunSpec with Matchers with TryValues with EitherV
          |""".stripMargin
       val S = ex + "S"
       val prop = ex + "prop"
-      val cmp = RDFAsJenaModel.fromString(str, "TURTLE").use(rdf => for {
+      val cmp = RDFAsJenaModel.fromString(str, "TURTLE").flatMap(_.use(rdf => for {
         schema <- RDF2Shacl.getShacl(rdf)
         shape <- IOUtils.fromES(schema.shape(S))
-      } yield shape)
+      } yield shape))
       cmp.attempt.unsafeRunSync match {
         case Left(e) => fail(s"Failed $e")
         case Right(shape) =>
@@ -143,10 +143,10 @@ class RDF2ShaclTest extends AnyFunSpec with Matchers with TryValues with EitherV
       val S = ex + "S"
       val p = ex + "p"
       val prop = ex + "prop"
-      val cmp: IO[(Shape, Schema)] = RDFAsJenaModel.fromString(str, "TURTLE").use(rdf => for {
+      val cmp: IO[(Shape, Schema)] = RDFAsJenaModel.fromString(str, "TURTLE").flatMap(_.use(rdf => for {
         schema <- RDF2Shacl.getShacl(rdf)
         shape <- IOUtils.fromES(schema.shape(S))
-      } yield (shape, schema))
+      } yield (shape, schema)))
 
       cmp.attempt.unsafeRunSync match {
         case Left(e) => fail(s"Failed $e")
@@ -177,10 +177,10 @@ class RDF2ShaclTest extends AnyFunSpec with Matchers with TryValues with EitherV
       val S = IRI(ex) + "S"
       val p = IRI(ex) + "p"
       val prop = IRI(ex) + "prop"
-      val cmp = RDFAsJenaModel.fromString(str, "TURTLE").use(rdf => for {
+      val cmp = RDFAsJenaModel.fromString(str, "TURTLE").flatMap(_.use(rdf => for {
         schema <- RDF2Shacl.getShacl(rdf)
         shape <- IOUtils.fromES(schema.shape(S))
-      } yield (shape, schema))
+      } yield (shape, schema)))
       cmp.attempt.unsafeRunSync match {
         case Left(e) => fail(s"Failed $e")
         case Right((shape, schema)) =>
@@ -210,10 +210,10 @@ class RDF2ShaclTest extends AnyFunSpec with Matchers with TryValues with EitherV
       val S = IRI(ex) + "S"
       val p = IRI(ex) + "p"
       val prop = IRI(ex) + "prop"
-      val cmp = RDFAsJenaModel.fromString(str, "TURTLE").use(rdf => for {
+      val cmp = RDFAsJenaModel.fromString(str, "TURTLE").flatMap(_.use(rdf => for {
         schema <- RDF2Shacl.getShacl(rdf)
         shape <- IOUtils.fromES(schema.shape(S))
-      } yield (shape, schema))
+      } yield (shape, schema)))
       cmp.attempt.unsafeRunSync match {
         case Left(e) => fail(s"Error parsing $e")
         case Right((shape, schema)) =>
@@ -244,11 +244,11 @@ class RDF2ShaclTest extends AnyFunSpec with Matchers with TryValues with EitherV
          |""".stripMargin
       val S = ex + "S"
       val prop = ex + "prop"
-      val cmp = RDFAsJenaModel.fromString(str, "TURTLE").use(rdf => for {
+      val cmp = RDFAsJenaModel.fromString(str, "TURTLE").flatMap(_.use(rdf => for {
         schema <- RDF2Shacl.getShacl(rdf)
         shape <- IOUtils.fromES(schema.shape(S))
         propShape <- IOUtils.fromES(schema.shape(prop))
-      } yield (shape, propShape))
+      } yield (shape, propShape)))
       cmp.attempt.unsafeRunSync match {
         case Left(e) => fail(s"Failed $e")
         case Right((shape,propShape)) =>

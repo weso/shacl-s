@@ -13,8 +13,8 @@ import org.scalatest.matchers.should._
 import scala.io.Source
 import scala.util._
 import cats.implicits._
-import cats.data.EitherT
-import cats.effect._
+// import cats.data.EitherT
+// import cats.effect._
 import es.weso.utils.IOUtils2.either2io
 
 class ValidateSingleTest extends AnyFunSpec with Matchers with TryValues with OptionValues
@@ -36,17 +36,18 @@ class ValidateSingleTest extends AnyFunSpec with Matchers with TryValues with Op
   }
 
   def validate(name: String, str: String): Unit = {
-    val cmp = (
-      RDFAsJenaModel.fromString(str, "TURTLE"), 
-      RDFAsJenaModel.empty
-      ).tupled.use{ case (rdf,builder) => for {
+    val cmp = for {
+     res1 <- RDFAsJenaModel.fromString(str, "TURTLE")
+     res2 <- RDFAsJenaModel.empty
+     vv <- (res1, res2).tupled.use{ case (rdf,builder) => for {
       schema <- RDF2Shacl.getShacl(rdf)
       eitherresult <- Validator.validate(schema, rdf)
       result <- either2io(eitherresult)
       (typing,ok) = result
       report <- typing.toValidationReport.toRDF(builder)
       strReport <- report.serialize("TURTLE")
-    } yield (ok, strReport)}
+    } yield (ok, strReport)}  
+    } yield vv 
     cmp.attempt.unsafeRunSync match {
       case Left(e) => fail(s"Error validating $name: $e")
       case Right(pair) => {

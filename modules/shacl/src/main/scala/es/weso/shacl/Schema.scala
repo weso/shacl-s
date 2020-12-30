@@ -103,9 +103,9 @@ case class Schema(pm: PrefixMap,
       case "TREE" => {
         IO(s"PrefixMap ${pm.treeString}\nShapes: ${shapes.treeString}")
       }
-      case _ => builder.empty.use(b => for {
+      case _ => builder.empty.flatMap(_.use(b => for {
         str <- new Shacl2RDF {}.serialize(this, format, base, b)
-      } yield str)
+      } yield str))
     }
   }
 
