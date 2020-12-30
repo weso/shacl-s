@@ -13,11 +13,11 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should._
 
 import scala.io.Source
-import cats.data.EitherT
+// import cats.data.EitherT
 import cats.effect._
 
 import scala.util._
-import cats.implicits._
+// import cats.implicits._
 import es.weso.utils.IOUtils2.either2io
 
 class ValidateFolder_RDF4jTest extends AnyFunSpec with Matchers with TryValues with OptionValues

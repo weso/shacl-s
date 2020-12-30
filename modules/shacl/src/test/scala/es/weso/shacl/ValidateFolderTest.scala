@@ -11,9 +11,9 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should._
 
 import scala.io.Source
-import cats.data.EitherT
+// import cats.data.EitherT
 import cats.effect._
-import cats.implicits._
+// import cats.implicits._
 
 class ValidateFolderTest
   extends AnyFunSpec with Matchers with TryValues with OptionValues
@@ -41,11 +41,11 @@ class ValidateFolderTest
   }
 
   def validate(name: String, str: String): Unit = {
-    val cmp = RDFAsJenaModel.fromString(str, "TURTLE").use(rdf => for {
+    val cmp = RDFAsJenaModel.fromString(str, "TURTLE").flatMap(_.use(rdf => for {
       schema <- RDF2Shacl.getShacl(rdf)
       eitherResult <- Validator.validate(schema, rdf)
       result <- eitherResult.fold(err => IO.raiseError(new RuntimeException(s"Error: ${err}")), IO.pure(_))
-    } yield result)
+    } yield result))
     cmp.attempt.unsafeRunSync().fold(
       e => fail(s"Error validating $name: $e"),
       result => {

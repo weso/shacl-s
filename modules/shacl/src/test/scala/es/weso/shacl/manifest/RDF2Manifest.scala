@@ -202,11 +202,12 @@ case class RDF2Manifest(base: Option[IRI],
     case iri: IRI =>
       if (derefIncludes) {
         val iriResolved = base.fold(iri)(base => base.resolve(iri))
-        cnvResource(RDFAsJenaModel.fromURI(iriResolved.getLexicalForm, "TURTLE", Some(iriResolved))).use(rdf => for {
+        liftIO(RDFAsJenaModel.fromURI(iriResolved.getLexicalForm, "TURTLE", Some(iriResolved))).flatMap(res => 
+        cnvResource(res).use(rdf => for {
           manifest <- RDF2Manifest(Some(iriResolved), true).rdf2Manifest(rdf, iri +: visited)
           //manifest <- if (mfs.size == 1) ok(mfs.head)
           // else parseFail(s"More than one manifests found: ${mfs} at iri $iri")
-        } yield (iri, Some(manifest)))
+        } yield (iri, Some(manifest))))
       } else ok((iri, None))
     case _ => 
        parseFail(s"Trying to deref an include from node $node which is not an IRI")
@@ -262,25 +263,16 @@ object RDF2Manifest extends LazyLogging {
            format: String,
            base: Option[String],
            derefIncludes: Boolean
-          ): Resource[IO,Manifest] = {
+          ): IO[Resource[IO,Manifest]] = {
     for {
-      cs <- {
-        val r: Resource[IO,CharSequence] = Resource.liftF(getContents(fileName))
-        r
+      cs <- getContents(fileName)
+      iriBase <- base match {
+          case None => None.pure[IO]
+          case Some(str) => IO.fromEither(IRI.fromString(str).leftMap(s => new RuntimeException(s))).map(Some(_))
       }
-      iriBase <- {
-        val r: Resource[IO,Option[IRI]] = base match {
-          case None => Resource.pure[IO,Option[IRI]](None)
-          case Some(str) => Resource.liftF(IO.fromEither(IRI.fromString(str).leftMap(s => new RuntimeException(s))).map(Some(_)))
-        }
-        r
-      }
-      rdf <- {
-        val r: Resource[IO,RDFBuilder] = RDFAsJenaModel.fromString(cs.toString, format, iriBase)
-        r
-      }
-      manifest <- Resource.liftF(fromRDF(rdf, iriBase, derefIncludes))
-    } yield manifest // ,rdf)
+      resRdf <- RDFAsJenaModel.fromString(cs.toString, format, iriBase)
+      manifest <- IO(resRdf.evalMap(rdf => fromRDF(rdf,iriBase,derefIncludes))) 
+    } yield manifest 
   }
 
   def fromRDF(rdf: RDFReader, base: Option[IRI], derefIncludes: Boolean): IO[Manifest] = {
