@@ -3,7 +3,7 @@ lazy val scala213 = "2.13.4"
 lazy val supportedScalaVersions = List(scala212, scala213)
 
 // Local dependencies
-lazy val srdfVersion           = "0.1.89"
+lazy val srdfVersion           = "0.1.90"
 lazy val utilsVersion          = "0.1.73"
 
 // Dependency versions
