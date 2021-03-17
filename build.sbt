@@ -1,22 +1,35 @@
-lazy val scala212 = "2.12.12"
-lazy val scala213 = "2.13.4"
-lazy val supportedScalaVersions = List(scala212, scala213)
+lazy val scala212 = "2.12.13"
+lazy val scala213 = "2.13.5"
+lazy val scala3   = "3.0.0-M3"
+
+lazy val supportedScalaVersions = List(
+  scala212, 
+  scala213
+)
+
+val Java11 = "adopt@1.11"  
+
 
 // Local dependencies
-lazy val srdfVersion           = "0.1.89"
-lazy val utilsVersion          = "0.1.73"
+lazy val srdfVersion           = "0.1.93"
+lazy val utilsVersion          = "0.1.77"
 
 // Dependency versions
 lazy val antlrVersion          = "4.7.1"
-lazy val catsVersion           = "2.3.0"
+lazy val catsVersion           = "2.4.2"
+lazy val catsEffectVersion     = "3.0.0-RC2"
+
 lazy val commonsTextVersion    = "1.8"
-lazy val circeVersion          = "0.14.0-M1"
+lazy val circeVersion          = "0.14.0-M4"
 lazy val diffsonVersion        = "4.0.0"
 // lazy val effVersion            = "4.6.1"
 lazy val jenaVersion           = "3.16.0"
 lazy val jgraphtVersion        = "1.3.1"
 lazy val logbackVersion        = "1.2.3"
 lazy val loggingVersion        = "3.9.2"
+lazy val munitVersion          = "0.7.22"
+lazy val munitEffectVersion    = "0.13.1"
+
 lazy val rdf4jVersion          = "3.0.0"
 lazy val scalacheckVersion     = "1.14.0"
 lazy val scalacticVersion      = "3.2.0"
@@ -35,6 +48,8 @@ lazy val scalaMacrosVersion   = "2.1.1"
 lazy val antlr4            = "org.antlr"                  % "antlr4"               % antlrVersion
 lazy val catsCore          = "org.typelevel"              %% "cats-core"           % catsVersion
 lazy val catsKernel        = "org.typelevel"              %% "cats-kernel"         % catsVersion
+lazy val catsEffect        = "org.typelevel"              %% "cats-effect"         % catsEffectVersion
+
 // lazy val catsMacros        = "org.typelevel"              %% "cats-macros"         % catsVersion
 lazy val circeCore         = "io.circe"                   %% "circe-core"          % circeVersion
 lazy val circeGeneric      = "io.circe"                   %% "circe-generic"       % circeVersion
@@ -46,6 +61,10 @@ lazy val jgraphtCore       = "org.jgrapht"                % "jgrapht-core"      
 lazy val logbackClassic    = "ch.qos.logback"             % "logback-classic"      % logbackVersion
 lazy val jenaArq           = "org.apache.jena"            % "jena-arq"             % jenaVersion
 lazy val jenaFuseki        = "org.apache.jena"            % "jena-fuseki-main"     % jenaVersion
+lazy val munit          = "org.scalameta"     %% "munit"           % munitVersion
+lazy val munitEffect    = "org.typelevel"     %% "munit-cats-effect-3" % munitEffectVersion
+lazy val MUnitFramework = new TestFramework("munit.Framework")
+
 lazy val rdf4j_runtime     = "org.eclipse.rdf4j"          % "rdf4j-runtime"        % rdf4jVersion
 lazy val srdf              = "es.weso"                    %% "srdf"            % srdfVersion
 lazy val srdfJena          = "es.weso"                    %% "srdfjena"        % srdfVersion
@@ -64,6 +83,8 @@ lazy val sext              = "com.github.nikita-volkov"   % "sext"              
 lazy val typesafeConfig    = "com.typesafe"               % "config"               % typesafeConfigVersion
 // lazy val xercesImpl        = "xerces"                     % "xercesImpl"           % xercesVersion
 lazy val simulacrum        = "org.typelevel" %% "simulacrum"     % simulacrumVersion
+
+ThisBuild / githubWorkflowJavaVersions := Seq(Java11)
 
 
 lazy val shacl_s = project
@@ -91,7 +112,10 @@ lazy val shacl_s = project
       scalaLogging,
       scallop,
       typesafeConfig,
+      munit % Test, 
+      munitEffect % Test
     ),
+    testFrameworks += MUnitFramework,
     cancelable in Global      := true,
     fork                      := true,
 //    parallelExecution in Test := false,
@@ -122,8 +146,11 @@ lazy val shacl = project
       // catsMacros, 
       srdf,
       srdf4j % Test,
-      srdfJena % Test
-      )
+      srdfJena % Test,
+      munit % Test, 
+      munitEffect % Test
+      ),
+    testFrameworks += MUnitFramework  
   )
 
 lazy val utilsTest = project
@@ -179,14 +206,14 @@ lazy val packagingSettings = Seq(
 
 lazy val compilationSettings = Seq(
   // format: off
-  javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
+  // javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
   scalacOptions ++= Seq(
     "-deprecation",                      // Emit warning and location for usages of deprecated APIs.
     "-encoding", "utf-8",                // Specify character encoding used by source files.
     "-explaintypes",                     // Explain type errors in more detail.
     "-feature",                          // Emit warning and location for usages of features that should be imported explicitly.  "-encoding", "UTF-8",
     "-language:_",
-    "-target:jvm-1.8",
+   // "-target:jvm-1.8",
     "-unchecked",                        // Enable additional warnings where generated code depends on assumptions.
     "-Xlint",
     "-Yrangepos",
@@ -207,16 +234,18 @@ lazy val wixSettings = Seq(
 )
 
 lazy val ghPagesSettings = Seq(
-  git.remoteRepo := "git@github.com:labra/shaclex.git"
+  // git.remoteRepo := "git@github.com:labra/shaclex.git"
 )
 
 lazy val commonSettings = compilationSettings ++ sharedDependencies ++ Seq(
   organization := "es.weso",
   resolvers ++= Seq(
-    Resolver.bintrayRepo("labra", "maven"),
-    Resolver.bintrayRepo("weso", "weso-releases"),
+    Resolver.githubPackages("weso"),
     Resolver.sonatypeRepo("snapshots")
   ), 
+  coverageHighlighting := true,
+  githubOwner := "weso", 
+  githubRepository := "shacl-s"
  // coverageHighlighting := priorTo2_13(scalaVersion.value), 
  // coverageEnabled := priorTo2_13(scalaVersion.value)
 )
@@ -229,7 +258,7 @@ def antlrSettings(packageName: String) = Seq(
 )
 
 lazy val publishSettings = Seq(
-  maintainer      := "Jose Emilio Labra Gayo <labra@uniovi.es>",
+  // maintainer      := "Jose Emilio Labra Gayo <labra@uniovi.es>",
   homepage        := Some(url("https://github.com/weso/shacl-s")),
   licenses        := Seq("MIT" -> url("http://opensource.org/licenses/MIT")),
   scmInfo         := Some(ScmInfo(url("https://github.com/weso/shacl-s"), "scm:git:git@github.com:weso/shacl-s.git")),
@@ -242,17 +271,17 @@ lazy val publishSettings = Seq(
                          <url>https://github.com/labra/</url>
                        </developer>
                      </developers>,
-  scalacOptions in doc ++= Seq(
+ /* scalacOptions in doc ++= Seq(
     "-diagrams-debug",
     "-doc-source-url",
     scmInfo.value.get.browseUrl + "/tree/master€{FILE_PATH}.scala",
     "-sourcepath",
     baseDirectory.in(LocalRootProject).value.getAbsolutePath,
     "-diagrams",
-  ),
+  ), */
   publishMavenStyle              := true,
-  bintrayRepository in bintray   := "weso-releases",
-  bintrayOrganization in bintray := Some("weso")
+  // bintrayRepository in bintray   := "weso-releases",
+  // bintrayOrganization in bintray := Some("weso")
 )
 
 def priorTo2_13(scalaVersion: String): Boolean =

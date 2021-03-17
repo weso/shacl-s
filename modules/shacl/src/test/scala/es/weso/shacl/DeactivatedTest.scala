@@ -3,15 +3,11 @@ package es.weso.shacl
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.shacl.converter.RDF2Shacl
 import es.weso.shacl.validator.Validator
-import org.scalatest._
-import org.scalatest.funspec.AnyFunSpec
-import org.scalatest.matchers.should._
+import munit._
 
-class DeactivatedTest extends AnyFunSpec with Matchers with TryValues with OptionValues
-  with SchemaMatchers {
+class DeactivatedTest extends CatsEffectSuite with SchemaMatchers {
 
-  describe("deactivated") {
-    it("checks a deactivated shape") {
+  test("checks a deactivated shape") {
       val str =
         s"""|prefix : <http://e/>
             |prefix sh:     <http://www.w3.org/ns/shacl#>
@@ -38,12 +34,7 @@ class DeactivatedTest extends AnyFunSpec with Matchers with TryValues with Optio
         result <- Validator.validate(schema, rdf)
       } yield result))
 
-      r.attempt.unsafeRunSync.fold(
-        e => fail(s"Error reading: $e"),
-        eitherResult => eitherResult match {
-          case Left(ar) => fail(s"Error: $ar")
-          case Right(pair) => info(s"Valid: ${pair}")
-      })
-    }
-  }
+      r.attempt.map(v => assertEquals(v.isRight,true))
+
+ } 
 }
