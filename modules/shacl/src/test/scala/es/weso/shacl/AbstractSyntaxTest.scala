@@ -1,13 +1,11 @@
 package es.weso.shacl
 
-import org.scalatest.funspec.AnyFunSpec
-import org.scalatest.matchers.should._
+import munit._
 import es.weso.rdf.nodes._
 
-class AbstractSyntaxTest extends AnyFunSpec with Matchers {
+class AbstractSyntaxTest extends FunSuite {
 
-  describe("Abstract Syntax") {
-    it("should be able to create a shape") {
+  test("should be able to create a shape") {
       val x = BNode("x")
       val id = IRI("http://example.org/s")
       val shape = NodeShape(
@@ -27,9 +25,8 @@ class AbstractSyntaxTest extends AnyFunSpec with Matchers {
         sourceIRI = None
       )
 
-      shape.id should be(id)
+      assertEquals(shape.id, id)
 
     }
 
-  }
 }

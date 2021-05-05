@@ -9,7 +9,7 @@ import es.weso.shacl.validator.Validator
 import cats.effect._
 import munit._
 
-class ImportTest extends CatsEffectSuite with SchemaMatchers {
+class ImportTest extends CatsEffectSuite {
 
   val conf: Config = ConfigFactory.load()
   val shaclFolderStr = conf.getString("shaclTests")

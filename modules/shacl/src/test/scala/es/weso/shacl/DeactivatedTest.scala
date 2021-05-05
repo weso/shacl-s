@@ -5,7 +5,7 @@ import es.weso.shacl.converter.RDF2Shacl
 import es.weso.shacl.validator.Validator
 import munit._
 
-class DeactivatedTest extends CatsEffectSuite with SchemaMatchers {
+class DeactivatedTest extends CatsEffectSuite {
 
   test("checks a deactivated shape") {
       val str =
