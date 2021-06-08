@@ -8,7 +8,7 @@ This project contains an implementation of
 [![Build Status](https://travis-ci.org/weso/shacl-s.svg?branch=master)](https://travis-ci.org/weso/shacl-s)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/da1290bfb5ea4f4e9dbf4074960d06c3)](https://www.codacy.com/gh/weso/shacl-s?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=weso/shacl-s&amp;utm_campaign=Badge_Grade)
 [![codecov](https://codecov.io/gh/weso/shacl-s/branch/master/graph/badge.svg)](https://codecov.io/gh/weso/shacl-s)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/es.weso/shacls_2.13/badge.svg)](https://maven-badges.herokuapp.com/maven-central/es.weso/shacls_2.13)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/es.weso/shacl_2.13/badge.svg)](https://maven-badges.herokuapp.com/maven-central/es.weso/shacl_2.13)
 
 ## Introduction
 
