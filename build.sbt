@@ -25,7 +25,7 @@ lazy val loggingVersion        = "3.9.3"
 lazy val munitVersion          = "0.7.22"
 lazy val munitEffectVersion    = "0.13.1"
 
-lazy val typesafeConfigVersion = "1.3.4"
+lazy val typesafeConfigVersion = "1.4.1"
 
 lazy val catsCore          = "org.typelevel"              %% "cats-core"           % catsVersion
 lazy val catsKernel        = "org.typelevel"              %% "cats-kernel"         % catsVersion
