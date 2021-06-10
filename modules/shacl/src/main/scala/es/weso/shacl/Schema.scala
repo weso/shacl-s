@@ -5,7 +5,7 @@ import es.weso.rdf.nodes.{IRI, RDFNode}
 import es.weso.shacl.converter.Shacl2RDF
 
 import scala.util.{Either, Left, Right}
-import sext._
+// import sext._
 import cats.effect.IO
 
 case class Schema(pm: PrefixMap,
@@ -100,21 +100,20 @@ case class Schema(pm: PrefixMap,
                 base: Option[IRI],
                 builder: RDFBuilder): IO[String] = {
     format.toUpperCase match {
-      case "TREE" => {
+      /*case "TREE" => {
         IO(s"PrefixMap ${pm.treeString}\nShapes: ${shapes.treeString}")
-      }
-      case _ => for {
-        b <- builder.empty
+      }*/
+      case _ => builder.empty.flatMap(_.use(b => for {
         str <- new Shacl2RDF {}.serialize(this, format, base, b)
-      } yield str
+      } yield str))
     }
   }
 
 }
 
-// Companion iriObjects
 object Schema {
-  val empty =
+
+  val empty: Schema =
     Schema(
       pm = SHACLPrefixes.defaultPrefixMap,
       imports = List(),
@@ -122,4 +121,5 @@ object Schema {
       shapesMap = Map(),
       propertyGroups = Map()
     )
+
 }

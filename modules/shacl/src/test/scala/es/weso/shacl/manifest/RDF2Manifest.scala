@@ -5,32 +5,51 @@ import es.weso.rdf._
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.rdf.nodes._
 import es.weso.rdf.parser.RDFParser
-import es.weso.utils.FileUtils._
+// import es.weso.utils.FileUtils._
 import ManifestPrefixes._
 import es.weso.utils.EitherUtils._
 import es.weso.rdf.parser._
-import cats.data.EitherT
+// import cats.data.EitherT
 import cats.effect._
 import scala.util._
+// import cats.data._
 import cats.implicits._
+// import es.weso.utils.IOUtils._
+// import es.weso.utils.internal.CollectionCompat._
+//import fs2.Stream
+import cats.arrow.FunctionK
+//import scala.concurrent.ExecutionContext
+//import fs2.Pipe
+//import java.nio.file.Paths
+//import es.weso.utils.IOUtils
+import es.weso.utils.FileUtils
+import java.nio.file.Path
+
+// case class RDF2ManifestException(v: String) extends RuntimeException(v)
 
 case class RDF2Manifest(base: Option[IRI],
                         derefIncludes: Boolean) extends RDFParser with LazyLogging {
 
-/*  private def cnv[A](p: RDFParser[A], cfg: Config): EitherT[IO,String,A] = {
-    EitherT(p.value.run(cfg))
-  } */
+
+  def transf: FunctionK[IO, RDFParser] = new FunctionK[IO,RDFParser] {
+    def apply[A](io: IO[A]): RDFParser[A] = liftIO(io)
+  }
+  def cnvResource[A](r: Resource[IO,A]): Resource[RDFParser,A] = r.mapK(transf)
+                          
+  def fromEitherS[A](e: Either[String,A]): RDFParser[A] = {
+    fromEither(e.leftMap(RDF2ManifestException))
+  }
+
   def rdf2Manifest(rdf: RDFReader, visited: List[RDFNode] = List()): RDFParser[Manifest] =
     for {
       mfs <- rdf2Manifests(rdf,visited)
-      mf <- fromEither(takeSingle(mfs,"Number of manifests != 1"))
+      mf <- fromEitherS(takeSingle(mfs,"Number of manifests != 1"))
       // parseNodes(candidates.toList, manifest(List()))(rdf)
     } yield mf
 
-
   def rdf2Manifests(rdf: RDFReader, visited: List[RDFNode] = List()): RDFParser[List[Manifest]] =
     for {
-      candidates <- fromEither(rdf.subjectsWithType(mf_Manifest))
+      candidates <- fromRDFStream(rdf.subjectsWithType(mf_Manifest))
       ns <- parseNodes(candidates.toList, manifest(List()))
     } yield ns
 
@@ -62,7 +81,7 @@ case class RDF2Manifest(base: Option[IRI],
   def entry: RDFParser[Entry] = for {
       n <- getNode
       entryTypeUri <- rdfType
-      entryType    <- fromEither(getEntryType(entryTypeUri))
+      entryType    <- fromEitherS(getEntryType(entryTypeUri))
       maybeName    <- stringFromPredicateOptional(mf_name)
       actionNode   <- objectFromPredicate(mf_action)
       action       <- withNode(actionNode, action) 
@@ -180,19 +199,21 @@ case class RDF2Manifest(base: Option[IRI],
       } yield result
 
   /* TODO: The following code doesn't take into account possible loops */
-  private def derefInclude(node: RDFNode, base: Option[IRI], visited: List[RDFNode],
-  ): RDFParser[(IRI, Option[Manifest])] = node match {
+  private def derefInclude(node: RDFNode,
+                           base: Option[IRI],
+                           visited: List[RDFNode]): RDFParser[(IRI, Option[Manifest])] = node match {
     case iri: IRI =>
       if (derefIncludes) {
         val iriResolved = base.fold(iri)(base => base.resolve(iri))
-        for {
-          rdf <- fromEither(RDFAsJenaModel.fromURI(iriResolved.getLexicalForm, "TURTLE", Some(iriResolved)))
+        liftIO(RDFAsJenaModel.fromURI(iriResolved.getLexicalForm, "TURTLE", Some(iriResolved))).flatMap(res => 
+        cnvResource(res).use(rdf => for {
           manifest <- RDF2Manifest(Some(iriResolved), true).rdf2Manifest(rdf, iri +: visited)
           //manifest <- if (mfs.size == 1) ok(mfs.head)
           // else parseFail(s"More than one manifests found: ${mfs} at iri $iri")
-        } yield (iri, Some(manifest))
+        } yield (iri, Some(manifest))))
       } else ok((iri, None))
-    case _ => parseFail(s"Trying to deref an include from node $node which is not an IRI")
+    case _ => 
+       parseFail(s"Trying to deref an include from node $node which is not an IRI")
   }
 
   private def parsePropertyValues[A](pred: IRI, parser: RDFParser[A]): RDFParser[Set[A]] =
@@ -211,7 +232,7 @@ case class RDF2Manifest(base: Option[IRI],
     optA match {
       case None => ok(None)
       case Some(x) => {
-        fromEither(fn(x).map(_.some))
+        fromEitherS(fn(x).map(_.some))
       }
     }
   }
@@ -228,7 +249,7 @@ case class RDF2Manifest(base: Option[IRI],
     for {
       rdf <- getRDF
       n <- getNode
-      ts <- fromEither(rdf.triplesWithSubjectPredicate(n, p))
+      ts <- fromRDFStream(rdf.triplesWithSubjectPredicate(n, p))
       r <- ts.size match {
         case 0 =>
           parseFail(
@@ -241,28 +262,40 @@ case class RDF2Manifest(base: Option[IRI],
 
 object RDF2Manifest extends LazyLogging {
 
-  def read(fileName: String,
+  def read(path: Path,
            format: String,
            base: Option[String],
            derefIncludes: Boolean
-          ): EitherT[IO, String, (Manifest,RDFBuilder)] = {
+          ): IO[Resource[IO,Manifest]] = {
     for {
-      cs <- getContents(fileName)
+      cs <- FileUtils.getContents(path)
       iriBase <- base match {
-        case None => EitherT.pure[IO,String](None)
-        case Some(str) => EitherT.fromEither[IO](IRI.fromString(str).map(Some(_)))
+          case None => None.pure[IO]
+          case Some(str) => IO.fromEither(IRI.fromString(str).leftMap(s => new RuntimeException(s))).map(Some(_))
       }
-      rdf <- RDFAsJenaModel.fromStringIO(cs.toString, format, iriBase).map(_.normalizeBNodes)
-//      _ <- { println(s"RDF: ${rdf.serialize("TURTLE")}\n---");Right(())}
-      manifest <- fromRDF(rdf, iriBase, derefIncludes)
-//      _ <- { println(s"Manifest: ${manifest.toString}\n---");Right(())}
-    } yield (manifest,rdf)
+      resRdf <- RDFAsJenaModel.fromString(cs.toString, format, iriBase)
+      manifest <- IO(resRdf.evalMap(rdf => fromRDF(rdf,iriBase,derefIncludes))) 
+    } yield manifest 
   }
 
-  def fromRDF(rdf: RDFReader, base: Option[IRI], derefIncludes: Boolean): EitherT[IO, String, Manifest] = {
+  def fromRDF(rdf: RDFReader, base: Option[IRI], derefIncludes: Boolean): IO[Manifest] = {
     val cfg = Config(IRI("http://internal/base"), rdf)
     val x = RDF2Manifest(base,derefIncludes).rdf2Manifest(rdf)
-    EitherT(x.value.run(cfg))
+    // EitherT(x.value.run(cfg).map(_.leftMap(_.toString)))
+    x.value.run(cfg).flatMap(e => e.fold(
+      err => IO.raiseError(err),
+      IO(_)
+    ))
   }
+
+  // TODO: Move to common tools 
+  /* private def getContents(fileName: String): IO[CharSequence] = {
+    val path = Paths.get(fileName)
+    implicit val cs = IO.contextShift(ExecutionContext.global)
+    val decoder: Pipe[IO,Byte,String] = fs2.text.utf8Decode
+    Stream.resource(Blocker[IO]).flatMap(blocker =>
+      fs2.io.file.readAll[IO](path, blocker,4096).through(decoder)
+    ).compile.string
+  } */
 
 }

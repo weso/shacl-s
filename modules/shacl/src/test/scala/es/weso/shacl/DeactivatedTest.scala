@@ -3,16 +3,11 @@ package es.weso.shacl
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.shacl.converter.RDF2Shacl
 import es.weso.shacl.validator.Validator
-import org.scalatest._
-import cats.data.EitherT
-import cats.effect._
-import cats.implicits._
+import munit._
 
-class DeactivatedTest extends FunSpec with Matchers with TryValues with OptionValues
-  with SchemaMatchers {
+class DeactivatedTest extends CatsEffectSuite {
 
-  describe("deactivated") {
-    it("checks a deactivated shape") {
+  test("checks a deactivated shape") {
       val str =
         s"""|prefix : <http://e/>
             |prefix sh:     <http://www.w3.org/ns/shacl#>
@@ -34,22 +29,12 @@ class DeactivatedTest extends FunSpec with Matchers with TryValues with OptionVa
             |:NotPerson sh:targetNode :carol .
             |  """.stripMargin
 
-      val r = for {
-        rdf    <- RDFAsJenaModel.fromStringIO(str, "TURTLE", None)
+      val r = RDFAsJenaModel.fromString(str, "TURTLE", None).flatMap(_.use(rdf => for {
         schema <- RDF2Shacl.getShacl(rdf)
-        result <- EitherT.fromEither[IO](Validator.validate(schema, rdf).leftMap(_.toString))
-      } yield result
+        result <- Validator.validate(schema, rdf)
+      } yield result))
 
-      r.value.unsafeRunSync.fold(
-        e => fail(s"Error reading: $e"),
-        pair => {
-        val (typing, ok) = pair
-        if (ok) {
-          info(s"Valid as expected")
-        } else {
-          fail(s"Not valid. Typing:\n$typing")
-        }
-      })
-    }
-  }
+      r.attempt.map(v => assertEquals(v.isRight,true))
+
+ } 
 }

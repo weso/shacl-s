@@ -1,0 +1,15 @@
+= SHACL-S library 
+:toc: right
+
+SHACL-S is a Scala implementation of 
+link:https://www.w3.org/TR/shacl/[SHACL].
+
+
+== About SHACL 
+
+- link:http://book.validatingrdf.com/[Validating RDF data book]. The HTML version of the book is freely available online.
+
+
+== ScalaDoc
+
+link:scaladoc/latest/es/weso/index.html[ScalaDoc]
