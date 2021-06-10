@@ -16,11 +16,14 @@ import scala.util._
 import cats.implicits._
 // import es.weso.utils.IOUtils._
 // import es.weso.utils.internal.CollectionCompat._
-import fs2.Stream
+//import fs2.Stream
 import cats.arrow.FunctionK
-import scala.concurrent.ExecutionContext
-import fs2.Pipe
-import java.nio.file.Paths
+//import scala.concurrent.ExecutionContext
+//import fs2.Pipe
+//import java.nio.file.Paths
+//import es.weso.utils.IOUtils
+import es.weso.utils.FileUtils
+import java.nio.file.Path
 
 // case class RDF2ManifestException(v: String) extends RuntimeException(v)
 
@@ -259,13 +262,13 @@ case class RDF2Manifest(base: Option[IRI],
 
 object RDF2Manifest extends LazyLogging {
 
-  def read(fileName: String,
+  def read(path: Path,
            format: String,
            base: Option[String],
            derefIncludes: Boolean
           ): IO[Resource[IO,Manifest]] = {
     for {
-      cs <- getContents(fileName)
+      cs <- FileUtils.getContents(path)
       iriBase <- base match {
           case None => None.pure[IO]
           case Some(str) => IO.fromEither(IRI.fromString(str).leftMap(s => new RuntimeException(s))).map(Some(_))
@@ -286,13 +289,13 @@ object RDF2Manifest extends LazyLogging {
   }
 
   // TODO: Move to common tools 
-  private def getContents(fileName: String): IO[CharSequence] = {
+  /* private def getContents(fileName: String): IO[CharSequence] = {
     val path = Paths.get(fileName)
     implicit val cs = IO.contextShift(ExecutionContext.global)
     val decoder: Pipe[IO,Byte,String] = fs2.text.utf8Decode
     Stream.resource(Blocker[IO]).flatMap(blocker =>
       fs2.io.file.readAll[IO](path, blocker,4096).through(decoder)
     ).compile.string
-  }
+  } */
 
 }

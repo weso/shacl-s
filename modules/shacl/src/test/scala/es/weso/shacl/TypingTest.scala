@@ -1,15 +1,11 @@
 package es.weso.shacl
 
-import org.scalatest._
+import munit._
 import es.weso.typing._
-import org.scalatest.funspec.AnyFunSpec
-import org.scalatest.matchers.should.Matchers
 
-class TypingTest extends AnyFunSpec with Matchers with TryValues with OptionValues {
+class TypingTest extends FunSuite {
 
-  describe("Typing") {
-
-    it("should be able to add evidences") {
+    test("should be able to add evidences") {
       type Evidence = String
       type Error = String
       type Node = String
@@ -22,11 +18,9 @@ class TypingTest extends AnyFunSpec with Matchers with TryValues with OptionValu
         addEvidence("x", "T", "x-T2").
         addEvidence("y", "S", "y-S1")
       val oksX = r.getOkValues("x")
-      oksX should contain only ("S", "T")
-      val es = r.getEvidences("x", "S")
-      es.value should contain only ("x-S1", "x-S2")
+      assertEquals(oksX, Set("S", "T"))
+      val es = r.getEvidences("x", "S").get
+      assertEquals(es, List("x-S1", "x-S2"))
     }
-
-  }
 
 }
