@@ -1,52 +1,44 @@
-lazy val scala212 = "2.12.12"
-lazy val scala213 = "2.13.4"
-lazy val supportedScalaVersions = List(scala212, scala213)
+lazy val scala212 = "2.12.14"
+lazy val scala213 = "2.13.5"
+lazy val scala3   = "3.0.0-RC2"
+
+lazy val supportedScalaVersions = List(
+  scala212, 
+  scala213
+)
+
+val Java11 = "adopt@1.11"  
 
 // Local dependencies
-lazy val srdfVersion           = "0.1.89"
-lazy val utilsVersion          = "0.1.73"
+lazy val srdfVersion           = "0.1.101"
+lazy val utilsVersion          = "0.1.94"
 
 // Dependency versions
-lazy val antlrVersion          = "4.7.1"
-lazy val catsVersion           = "2.3.0"
-lazy val commonsTextVersion    = "1.8"
-lazy val circeVersion          = "0.14.0-M1"
-lazy val diffsonVersion        = "4.0.0"
-// lazy val effVersion            = "4.6.1"
+// lazy val antlrVersion          = "4.7.1"
+lazy val catsVersion           = "2.5.0"
+lazy val catsEffectVersion     = "3.0.2"
+
+lazy val circeVersion          = "0.14.0"
 lazy val jenaVersion           = "3.16.0"
-lazy val jgraphtVersion        = "1.3.1"
 lazy val logbackVersion        = "1.2.3"
-lazy val loggingVersion        = "3.9.2"
-lazy val rdf4jVersion          = "3.0.0"
-lazy val scalacheckVersion     = "1.14.0"
-lazy val scalacticVersion      = "3.2.0"
-lazy val scalaTestVersion      = "3.2.0"
-lazy val scalatagsVersion      = "0.6.7"
-lazy val scallopVersion        = "3.3.1"
-lazy val sextVersion           = "0.2.6"
+lazy val loggingVersion        = "3.9.3"
+lazy val munitVersion          = "0.7.22"
+lazy val munitEffectVersion    = "0.13.1"
+
 lazy val typesafeConfigVersion = "1.3.4"
 
-// Compiler plugin dependency versions
-lazy val simulacrumVersion    = "1.0.0"
-// lazy val kindProjectorVersion = "0.9.5"
-lazy val scalaMacrosVersion   = "2.1.1"
-
-// Dependency modules
-lazy val antlr4            = "org.antlr"                  % "antlr4"               % antlrVersion
 lazy val catsCore          = "org.typelevel"              %% "cats-core"           % catsVersion
 lazy val catsKernel        = "org.typelevel"              %% "cats-kernel"         % catsVersion
-// lazy val catsMacros        = "org.typelevel"              %% "cats-macros"         % catsVersion
+lazy val catsEffect        = "org.typelevel"              %% "cats-effect"         % catsEffectVersion
+
 lazy val circeCore         = "io.circe"                   %% "circe-core"          % circeVersion
 lazy val circeGeneric      = "io.circe"                   %% "circe-generic"       % circeVersion
 lazy val circeParser       = "io.circe"                   %% "circe-parser"        % circeVersion
-lazy val commonsText       = "org.apache.commons"         %  "commons-text"        % commonsTextVersion
-lazy val diffsonCirce      = "org.gnieh"                  %% "diffson-circe"       % diffsonVersion
-// lazy val eff               = "org.atnos"                  %% "eff"                 % effVersion
-lazy val jgraphtCore       = "org.jgrapht"                % "jgrapht-core"         % jgraphtVersion
 lazy val logbackClassic    = "ch.qos.logback"             % "logback-classic"      % logbackVersion
-lazy val jenaArq           = "org.apache.jena"            % "jena-arq"             % jenaVersion
-lazy val jenaFuseki        = "org.apache.jena"            % "jena-fuseki-main"     % jenaVersion
-lazy val rdf4j_runtime     = "org.eclipse.rdf4j"          % "rdf4j-runtime"        % rdf4jVersion
+lazy val munit          = "org.scalameta"     %% "munit"           % munitVersion
+lazy val munitEffect    = "org.typelevel"     %% "munit-cats-effect-3" % munitEffectVersion
+lazy val MUnitFramework = new TestFramework("munit.Framework")
+
 lazy val srdf              = "es.weso"                    %% "srdf"            % srdfVersion
 lazy val srdfJena          = "es.weso"                    %% "srdfjena"        % srdfVersion
 lazy val srdf4j            = "es.weso"                    %% "srdf4j"          % srdfVersion
@@ -55,15 +47,9 @@ lazy val typing            = "es.weso"                    %% "typing"          %
 lazy val validating        = "es.weso"                    %% "validating"      % utilsVersion
 
 lazy val scalaLogging      = "com.typesafe.scala-logging" %% "scala-logging"       % loggingVersion
-lazy val scallop           = "org.rogach"                 %% "scallop"             % scallopVersion
-lazy val scalactic         = "org.scalactic"              %% "scalactic"           % scalacticVersion
-lazy val scalacheck        = "org.scalacheck"             %% "scalacheck"          % scalacheckVersion
-lazy val scalaTest         = "org.scalatest"              %% "scalatest"           % scalaTestVersion
-//lazy val scalatags         = "com.lihaoyi"                %% "scalatags"           % scalatagsVersion
-lazy val sext              = "com.github.nikita-volkov"   % "sext"                 % sextVersion
 lazy val typesafeConfig    = "com.typesafe"               % "config"               % typesafeConfigVersion
-// lazy val xercesImpl        = "xerces"                     % "xercesImpl"           % xercesVersion
-lazy val simulacrum        = "org.typelevel" %% "simulacrum"     % simulacrumVersion
+
+ThisBuild / githubWorkflowJavaVersions := Seq(Java11)
 
 
 lazy val shacl_s = project
@@ -87,43 +73,45 @@ lazy val shacl_s = project
       file("src/assets/favicon.ico") -> "favicon.ico"
     ),
     libraryDependencies ++= Seq(
-      logbackClassic,
-      scalaLogging,
-      scallop,
+   //   logbackClassic,
+   //   scalaLogging,
+   //   scallop,
       typesafeConfig,
+      munit % Test, 
+      munitEffect % Test
     ),
+    testFrameworks += MUnitFramework,
     cancelable in Global      := true,
     fork                      := true,
-//    parallelExecution in Test := false,
     crossScalaVersions := supportedScalaVersions,
-//    publishArtifact := false,
     skip in publish := true,
     ThisBuild / turbo := true
   )
 
 lazy val shacl = project
   .in(file("modules/shacl"))
-//  .disablePlugins(RevolverPlugin)
   .settings(commonSettings, publishSettings)
   .dependsOn()
   .settings(
-    logBuffered in Test       := false,
-    parallelExecution in Test := false,
     fork in Test              := true,
     crossScalaVersions := supportedScalaVersions,
     libraryDependencies ++= Seq(
-      typesafeConfig % Test,
       catsCore,
-      sext,
+     // sext,
       utils,
       typing,
       validating,
       catsKernel,
+      scalaLogging,
       // catsMacros, 
       srdf,
+      typesafeConfig % Test,
       srdf4j % Test,
-      srdfJena % Test
-      )
+      srdfJena % Test,
+      munit % Test, 
+      munitEffect % Test
+      ),
+    testFrameworks += MUnitFramework  
   )
 
 lazy val utilsTest = project
@@ -138,11 +126,6 @@ lazy val utilsTest = project
       circeParser,
       catsCore,
       catsKernel,
-//      catsMacros,
-      diffsonCirce,
-//      xercesImpl,
-      commonsText,
-      scalaTest
     )
   )
 
@@ -154,16 +137,12 @@ lazy val noDocProjects = Seq[ProjectReference](
 )
 
 lazy val noPublishSettings = Seq(
-//  publish := (),
-//  publishLocal := (),
   publishArtifact := false,
   licenses        := Seq("MIT" -> url("http://opensource.org/licenses/MIT"))
 )
 
 lazy val sharedDependencies = Seq(
   libraryDependencies ++= Seq(
-    scalactic,
-    scalaTest % Test
   )
 )
 
@@ -178,18 +157,14 @@ lazy val packagingSettings = Seq(
 )
 
 lazy val compilationSettings = Seq(
-  // format: off
-  javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
   scalacOptions ++= Seq(
     "-deprecation",                      // Emit warning and location for usages of deprecated APIs.
     "-encoding", "utf-8",                // Specify character encoding used by source files.
     "-explaintypes",                     // Explain type errors in more detail.
     "-feature",                          // Emit warning and location for usages of features that should be imported explicitly.  "-encoding", "UTF-8",
     "-language:_",
-    "-target:jvm-1.8",
+   // "-target:jvm-1.8",
     "-unchecked",                        // Enable additional warnings where generated code depends on assumptions.
-    "-Xlint",
-    "-Yrangepos",
     "-Ywarn-dead-code",                  // Warn when dead code is identified.
     // "-Xfatal-warnings",
     "-Ywarn-extra-implicit",             // Warn when more than one implicit parameter section is defined.
@@ -198,38 +173,30 @@ lazy val compilationSettings = Seq(
   // format: on
 )
 
-lazy val wixSettings = Seq(
-  wixProductId        := "39b564d5-d381-4282-ada9-87244c76e14b",
-  wixProductUpgradeId := "6a710435-9af4-4adb-a597-98d3dd0bade1"
-// The same numbers as in the docs?
-// wixProductId := "ce07be71-510d-414a-92d4-dff47631848a",
-// wixProductUpgradeId := "4552fb0e-e257-4dbd-9ecb-dba9dbacf424"
-)
+lazy val wixSettings = Seq()
 
 lazy val ghPagesSettings = Seq(
-  git.remoteRepo := "git@github.com:labra/shaclex.git"
 )
 
 lazy val commonSettings = compilationSettings ++ sharedDependencies ++ Seq(
   organization := "es.weso",
   resolvers ++= Seq(
-    Resolver.bintrayRepo("labra", "maven"),
-    Resolver.bintrayRepo("weso", "weso-releases"),
-    Resolver.sonatypeRepo("snapshots")
+//    Resolver.githubPackages("weso"),
+//    Resolver.sonatypeRepo("snapshots")
   ), 
- // coverageHighlighting := priorTo2_13(scalaVersion.value), 
- // coverageEnabled := priorTo2_13(scalaVersion.value)
+  coverageHighlighting := true,
+//  githubOwner := "weso", 
+//  githubRepository := "shacl-s"
 )
 
-def antlrSettings(packageName: String) = Seq(
+/*def antlrSettings(packageName: String) = Seq(
   antlr4GenListener in Antlr4 := true,
   antlr4GenVisitor in Antlr4  := true,
   antlr4Dependency in Antlr4  := antlr4,
   antlr4PackageName in Antlr4 := Some(packageName),
-)
+)*/
 
 lazy val publishSettings = Seq(
-  maintainer      := "Jose Emilio Labra Gayo <labra@uniovi.es>",
   homepage        := Some(url("https://github.com/weso/shacl-s")),
   licenses        := Seq("MIT" -> url("http://opensource.org/licenses/MIT")),
   scmInfo         := Some(ScmInfo(url("https://github.com/weso/shacl-s"), "scm:git:git@github.com:weso/shacl-s.git")),
@@ -242,17 +209,7 @@ lazy val publishSettings = Seq(
                          <url>https://github.com/labra/</url>
                        </developer>
                      </developers>,
-  scalacOptions in doc ++= Seq(
-    "-diagrams-debug",
-    "-doc-source-url",
-    scmInfo.value.get.browseUrl + "/tree/master€{FILE_PATH}.scala",
-    "-sourcepath",
-    baseDirectory.in(LocalRootProject).value.getAbsolutePath,
-    "-diagrams",
-  ),
   publishMavenStyle              := true,
-  bintrayRepository in bintray   := "weso-releases",
-  bintrayOrganization in bintray := Some("weso")
 )
 
 def priorTo2_13(scalaVersion: String): Boolean =
