@@ -22,7 +22,7 @@ lazy val circeVersion          = "0.14.0"
 lazy val jenaVersion           = "3.16.0"
 lazy val logbackVersion        = "1.2.3"
 lazy val loggingVersion        = "3.9.3"
-lazy val munitVersion          = "0.7.22"
+lazy val munitVersion          = "0.7.27"
 lazy val munitEffectVersion    = "0.13.1"
 
 lazy val typesafeConfigVersion = "1.3.4"
