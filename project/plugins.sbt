@@ -1,6 +1,6 @@
 addSbtPlugin("ch.epfl.lamp"      % "sbt-dotty"           % "0.4.2")
 addSbtPlugin("com.codecommit"    % "sbt-github-actions"  % "0.10.1")
-addSbtPlugin("org.scalameta"     % "sbt-mdoc"            % "2.2.20")
+addSbtPlugin("org.scalameta"     % "sbt-mdoc"            % "2.2.22")
 
 addSbtPlugin("com.eed3si9n"      % "sbt-unidoc"          % "0.4.3")
 addSbtPlugin("com.eed3si9n"      % "sbt-assembly"        % "0.15.0")
