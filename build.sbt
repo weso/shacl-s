@@ -10,7 +10,7 @@ lazy val supportedScalaVersions = List(
 val Java11 = "adopt@1.11"  
 
 // Local dependencies
-lazy val srdfVersion           = "0.1.101"
+lazy val srdfVersion           = "0.1.104"
 lazy val utilsVersion          = "0.1.94"
 
 // Dependency versions
