@@ -2,7 +2,7 @@ addSbtPlugin("ch.epfl.lamp"      % "sbt-dotty"           % "0.4.2")
 addSbtPlugin("com.codecommit"    % "sbt-github-actions"  % "0.10.1")
 addSbtPlugin("org.scalameta"     % "sbt-mdoc"            % "2.2.20")
 
-addSbtPlugin("com.eed3si9n"      % "sbt-unidoc"          % "0.4.3")
+addSbtPlugin("com.github.sbt"      % "sbt-unidoc"          % "0.5.0")
 addSbtPlugin("com.eed3si9n"      % "sbt-assembly"        % "0.15.0")
 addSbtPlugin("com.eed3si9n"      % "sbt-buildinfo"       % "0.9.0")
 addSbtPlugin("com.typesafe.sbt"  % "sbt-site"            % "1.4.1")
