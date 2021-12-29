@@ -17,7 +17,7 @@ case class NodeShapeEvidence(node: RDFNode,
 case class MsgEvidence(msg: String) extends Evidence
 
 object Evidence {
-  implicit val evidenceShow = new Show[Evidence] {
+  implicit val evidenceShow: Show[Evidence] = new Show[Evidence] {
     def show(e: Evidence) = e match {
       case NodeShapeEvidence(node, shape, msg) => s"$node@${shape.id}: $msg"
       case MsgEvidence(msg) => msg

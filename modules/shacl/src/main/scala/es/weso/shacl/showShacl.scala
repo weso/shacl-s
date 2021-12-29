@@ -5,13 +5,13 @@ import es.weso.shacl.report.{AbstractResult, MsgError, ValidationResult}
 
 object showShacl {
 
-  implicit def showShape = new Show[Shape] {
+  implicit def showShape: Show[Shape] = new Show[Shape] {
     def show(shape: Shape): String = {
       shape.id.toString // .fold("_?")(iri => iri.str)
     }
   }
 
-  implicit def showError = new Show[AbstractResult] {
+  implicit def showError: Show[AbstractResult] = new Show[AbstractResult] {
     def show(ve: AbstractResult): String =
      ve match {
       case vr: ValidationResult => s"Violation Error(${vr.sourceConstraintComponent}). Node(${vr.focusNode}) ${vr.message.mkString(",")}"
@@ -19,7 +19,7 @@ object showShacl {
      }
   }
 
-  implicit def showRDFNode = new Show[RDFNode] {
+  implicit def showRDFNode: Show[RDFNode] = new Show[RDFNode] {
     def show(n: RDFNode): String = n.toString
   }
 

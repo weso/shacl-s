@@ -16,7 +16,7 @@ case class AttemptInfo(node: RDFNode,
 }
 
 object AttemptInfo {
-  implicit val nodeShapeShow = new Show[AttemptInfo] {
+  implicit val nodeShapeShow: Show[AttemptInfo] = new Show[AttemptInfo] {
     def show(ns: AttemptInfo) = s"[${ns.node},${ns.shape.showId}]"
   }
 }
