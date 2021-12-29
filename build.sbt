@@ -1,31 +1,31 @@
-lazy val scala212 = "2.12.14"
-lazy val scala213 = "2.13.5"
-lazy val scala3   = "3.0.0-RC2"
+lazy val scala212 = "2.12.15"
+lazy val scala213 = "2.13.7"
+lazy val scala3   = "3.1.0"
 
 lazy val supportedScalaVersions = List(
+  scala3,
   scala212, 
   scala213
 )
 
-val Java11 = "adopt@1.11"  
+val Java11 = JavaSpec.temurin("11") // "adopt@1.11"  
 
 // Local dependencies
-lazy val srdfVersion           = "0.1.101"
-lazy val utilsVersion          = "0.1.94"
+lazy val srdfVersion           = "0.1.106"
+lazy val utilsVersion          = "0.2.2"
 
 // Dependency versions
 // lazy val antlrVersion          = "4.7.1"
-lazy val catsVersion           = "2.5.0"
-lazy val catsEffectVersion     = "3.0.2"
-
-lazy val circeVersion          = "0.14.0"
-lazy val jenaVersion           = "3.16.0"
+lazy val catsVersion           = "2.7.0"
+lazy val catsEffectVersion     = "3.3.1"
+lazy val circeVersion          = "0.14.1"
+lazy val jenaVersion           = "4.3.2"
 lazy val logbackVersion        = "1.2.3"
-lazy val loggingVersion        = "3.9.3"
-lazy val munitVersion          = "0.7.22"
-lazy val munitEffectVersion    = "0.13.1"
+lazy val loggingVersion        = "3.9.4"
+lazy val munitVersion          = "0.7.29"
+lazy val munitEffectVersion    = "1.0.7"
 
-lazy val typesafeConfigVersion = "1.3.4"
+lazy val typesafeConfigVersion = "1.4.1"
 
 lazy val catsCore          = "org.typelevel"              %% "cats-core"           % catsVersion
 lazy val catsKernel        = "org.typelevel"              %% "cats-kernel"         % catsVersion
@@ -103,7 +103,6 @@ lazy val shacl = project
       validating,
       catsKernel,
       scalaLogging,
-      // catsMacros, 
       srdf,
       typesafeConfig % Test,
       srdf4j % Test,
@@ -116,7 +115,6 @@ lazy val shacl = project
 
 lazy val utilsTest = project
   .in(file("modules/utilsTest"))
-//  .disablePlugins(RevolverPlugin)
   .settings(commonSettings, noPublishSettings)
   .settings(
     crossScalaVersions := supportedScalaVersions,
