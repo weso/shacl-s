@@ -8,6 +8,7 @@ This project contains an implementation of
 [![Build Status](https://travis-ci.org/weso/shacl-s.svg?branch=master)](https://travis-ci.org/weso/shacl-s)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/da1290bfb5ea4f4e9dbf4074960d06c3)](https://www.codacy.com/gh/weso/shacl-s?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=weso/shacl-s&amp;utm_campaign=Badge_Grade)
 [![codecov](https://codecov.io/gh/weso/shacl-s/branch/master/graph/badge.svg)](https://codecov.io/gh/weso/shacl-s)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/es.weso/shacl_2.13/badge.svg)](https://maven-badges.herokuapp.com/maven-central/es.weso/shacl_2.13)
 
 ## Introduction
 
@@ -71,6 +72,19 @@ $ sbt
 sbt:shaclex> project shacl 
 sbt:shacl> testOnly es.weso.shacl.report.ReportGeneratorCompatTest
 ```
+
+## Publishing to OSS-Sonatype
+
+This project uses [the sbt ci release](https://github.com/olafurpg/sbt-ci-release) plugin for publishing to [OSS Sonatype](https://oss.sonatype.org/).
+
+##### SNAPSHOT Releases
+Open a PR and merge it to watch the CI release a -SNAPSHOT version
+
+##### Full Library Releases
+1. Push a tag and watch the CI do a regular release
+2. `git tag -a v0.1.0 -m "v0.1.0"`
+3. `git push origin v0.1.0`
+_Note that the tag version MUST start with v._ 
  
 ## More information
 

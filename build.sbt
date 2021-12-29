@@ -1,70 +1,44 @@
-lazy val scala212 = "2.12.13"
-lazy val scala213 = "2.13.5"
-lazy val scala3   = "3.0.0-RC2"
+lazy val scala212 = "2.12.15"
+lazy val scala213 = "2.13.7"
+lazy val scala3   = "3.1.0"
 
 lazy val supportedScalaVersions = List(
+  scala3,
   scala212, 
   scala213
 )
 
-val Java11 = "adopt@1.11"  
+val Java11 = JavaSpec.temurin("11") // "adopt@1.11"  
 
 // Local dependencies
-lazy val srdfVersion           = "0.1.100"
-lazy val utilsVersion          = "0.1.87"
+lazy val srdfVersion           = "0.1.106"
+lazy val utilsVersion          = "0.2.2"
 
 // Dependency versions
 // lazy val antlrVersion          = "4.7.1"
-lazy val catsVersion           = "2.5.0"
-lazy val catsEffectVersion     = "3.0.2"
-
-// lazy val commonsTextVersion    = "1.8"
-lazy val circeVersion          = "0.14.0-M5"
-// lazy val diffsonVersion        = "4.0.0"
-// lazy val effVersion            = "4.6.1"
-lazy val jenaVersion           = "3.16.0"
-// lazy val jgraphtVersion        = "1.3.1"
+lazy val catsVersion           = "2.7.0"
+lazy val catsEffectVersion     = "3.3.1"
+lazy val circeVersion          = "0.14.1"
+lazy val jenaVersion           = "4.3.2"
 lazy val logbackVersion        = "1.2.3"
 lazy val loggingVersion        = "3.9.3"
-lazy val munitVersion          = "0.7.22"
-lazy val munitEffectVersion    = "0.13.1"
+lazy val munitVersion          = "0.7.29"
+lazy val munitEffectVersion    = "1.0.7"
 
-// lazy val rdf4jVersion          = "3.0.0"
-// lazy val scalacheckVersion     = "1.14.0"
-// lazy val scalacticVersion      = "3.2.0"
-// lazy val scalaTestVersion      = "3.2.0"
-// lazy val scalatagsVersion      = "0.6.7"
-// lazy val scallopVersion        = "3.3.1"
-// lazy val sextVersion           = "0.2.6"
-lazy val typesafeConfigVersion = "1.3.4"
+lazy val typesafeConfigVersion = "1.4.1"
 
-// Compiler plugin dependency versions
-// lazy val simulacrumVersion    = "1.0.0"
-// lazy val kindProjectorVersion = "0.9.5"
-// lazy val scalaMacrosVersion   = "2.1.1"
-
-// Dependency modules
-// lazy val antlr4            = "org.antlr"                  % "antlr4"               % antlrVersion
 lazy val catsCore          = "org.typelevel"              %% "cats-core"           % catsVersion
 lazy val catsKernel        = "org.typelevel"              %% "cats-kernel"         % catsVersion
 lazy val catsEffect        = "org.typelevel"              %% "cats-effect"         % catsEffectVersion
 
-// lazy val catsMacros        = "org.typelevel"              %% "cats-macros"         % catsVersion
 lazy val circeCore         = "io.circe"                   %% "circe-core"          % circeVersion
 lazy val circeGeneric      = "io.circe"                   %% "circe-generic"       % circeVersion
 lazy val circeParser       = "io.circe"                   %% "circe-parser"        % circeVersion
-// lazy val commonsText       = "org.apache.commons"         %  "commons-text"        % commonsTextVersion
-// lazy val diffsonCirce      = "org.gnieh"                  %% "diffson-circe"       % diffsonVersion
-// lazy val eff               = "org.atnos"                  %% "eff"                 % effVersion
-// lazy val jgraphtCore       = "org.jgrapht"                % "jgrapht-core"         % jgraphtVersion
 lazy val logbackClassic    = "ch.qos.logback"             % "logback-classic"      % logbackVersion
-// lazy val jenaArq           = "org.apache.jena"            % "jena-arq"             % jenaVersion
-// lazy val jenaFuseki        = "org.apache.jena"            % "jena-fuseki-main"     % jenaVersion
 lazy val munit          = "org.scalameta"     %% "munit"           % munitVersion
 lazy val munitEffect    = "org.typelevel"     %% "munit-cats-effect-3" % munitEffectVersion
 lazy val MUnitFramework = new TestFramework("munit.Framework")
 
-// lazy val rdf4j_runtime     = "org.eclipse.rdf4j"          % "rdf4j-runtime"        % rdf4jVersion
 lazy val srdf              = "es.weso"                    %% "srdf"            % srdfVersion
 lazy val srdfJena          = "es.weso"                    %% "srdfjena"        % srdfVersion
 lazy val srdf4j            = "es.weso"                    %% "srdf4j"          % srdfVersion
@@ -73,15 +47,7 @@ lazy val typing            = "es.weso"                    %% "typing"          %
 lazy val validating        = "es.weso"                    %% "validating"      % utilsVersion
 
 lazy val scalaLogging      = "com.typesafe.scala-logging" %% "scala-logging"       % loggingVersion
-// lazy val scallop           = "org.rogach"                 %% "scallop"             % scallopVersion
-// lazy val scalactic         = "org.scalactic"              %% "scalactic"           % scalacticVersion
-// lazy val scalacheck        = "org.scalacheck"             %% "scalacheck"          % scalacheckVersion
-// lazy val scalaTest         = "org.scalatest"              %% "scalatest"           % scalaTestVersion
-//lazy val scalatags         = "com.lihaoyi"                %% "scalatags"           % scalatagsVersion
-// lazy val sext              = "com.github.nikita-volkov"   % "sext"                 % sextVersion
 lazy val typesafeConfig    = "com.typesafe"               % "config"               % typesafeConfigVersion
-// lazy val xercesImpl        = "xerces"                     % "xercesImpl"           % xercesVersion
-// lazy val simulacrum        = "org.typelevel" %% "simulacrum"     % simulacrumVersion
 
 ThisBuild / githubWorkflowJavaVersions := Seq(Java11)
 
@@ -117,21 +83,16 @@ lazy val shacl_s = project
     testFrameworks += MUnitFramework,
     cancelable in Global      := true,
     fork                      := true,
-//    parallelExecution in Test := false,
     crossScalaVersions := supportedScalaVersions,
-//    publishArtifact := false,
     skip in publish := true,
     ThisBuild / turbo := true
   )
 
 lazy val shacl = project
   .in(file("modules/shacl"))
-//  .disablePlugins(RevolverPlugin)
   .settings(commonSettings, publishSettings)
   .dependsOn()
   .settings(
-   // logBuffered in Test       := false,
-   // parallelExecution in Test := false,
     fork in Test              := true,
     crossScalaVersions := supportedScalaVersions,
     libraryDependencies ++= Seq(
@@ -165,11 +126,6 @@ lazy val utilsTest = project
       circeParser,
       catsCore,
       catsKernel,
-//      catsMacros,
-//      diffsonCirce,
-//      xercesImpl,
-//      commonsText,
-//      scalaTest
     )
   )
 
@@ -181,8 +137,6 @@ lazy val noDocProjects = Seq[ProjectReference](
 )
 
 lazy val noPublishSettings = Seq(
-//  publish := (),
-//  publishLocal := (),
   publishArtifact := false,
   licenses        := Seq("MIT" -> url("http://opensource.org/licenses/MIT"))
 )
@@ -227,12 +181,12 @@ lazy val ghPagesSettings = Seq(
 lazy val commonSettings = compilationSettings ++ sharedDependencies ++ Seq(
   organization := "es.weso",
   resolvers ++= Seq(
-    Resolver.githubPackages("weso"),
+//    Resolver.githubPackages("weso"),
 //    Resolver.sonatypeRepo("snapshots")
   ), 
   coverageHighlighting := true,
-  githubOwner := "weso", 
-  githubRepository := "shacl-s"
+//  githubOwner := "weso", 
+//  githubRepository := "shacl-s"
 )
 
 /*def antlrSettings(packageName: String) = Seq(
