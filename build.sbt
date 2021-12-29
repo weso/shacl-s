@@ -21,7 +21,7 @@ lazy val catsEffectVersion     = "3.3.1"
 lazy val circeVersion          = "0.14.1"
 lazy val jenaVersion           = "4.3.2"
 lazy val logbackVersion        = "1.2.3"
-lazy val loggingVersion        = "3.9.3"
+lazy val loggingVersion        = "3.9.4"
 lazy val munitVersion          = "0.7.29"
 lazy val munitEffectVersion    = "1.0.7"
 
@@ -103,7 +103,6 @@ lazy val shacl = project
       validating,
       catsKernel,
       scalaLogging,
-      // catsMacros, 
       srdf,
       typesafeConfig % Test,
       srdf4j % Test,
@@ -116,7 +115,6 @@ lazy val shacl = project
 
 lazy val utilsTest = project
   .in(file("modules/utilsTest"))
-//  .disablePlugins(RevolverPlugin)
   .settings(commonSettings, noPublishSettings)
   .settings(
     crossScalaVersions := supportedScalaVersions,
