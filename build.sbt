@@ -21,7 +21,7 @@ lazy val catsEffectVersion     = "3.3.1"
 lazy val circeVersion          = "0.14.1"
 lazy val jenaVersion           = "4.3.2"
 lazy val logbackVersion        = "1.2.3"
-lazy val loggingVersion        = "3.9.5"
+lazy val loggingVersion        = "3.9.4"
 lazy val munitVersion          = "0.7.29"
 lazy val munitEffectVersion    = "1.0.7"
 
