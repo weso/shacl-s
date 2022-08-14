@@ -13,7 +13,7 @@ import es.weso.shacl._
 import es.weso.shacl.report.Severity
 import cats.effect.IO
 
-class Shacl2RDF() extends RDFSaver with LazyLogging {
+case class Shacl2RDF() extends RDFSaver with LazyLogging {
 
   def serialize(shacl: Schema,
                 format: String,
