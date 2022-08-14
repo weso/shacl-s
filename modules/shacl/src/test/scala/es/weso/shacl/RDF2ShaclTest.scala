@@ -1,39 +1,27 @@
 package es.weso.shacl
 
-import org.scalatest._
-import org.scalatest.funspec.AnyFunSpec
-import org.scalatest.matchers.should._
 import es.weso.rdf.nodes._
 import es.weso.rdf.jena.RDFAsJenaModel
 import es.weso.shacl.converter.RDF2Shacl
 import es.weso.rdf.path._
 import cats.effect._
 import es.weso.utils.IOUtils
+import munit.CatsEffectSuite
 
-class RDF2ShaclTest extends AnyFunSpec with Matchers with TryValues with EitherValues
-  with SchemaMatchers {
+class RDF2ShaclTest extends CatsEffectSuite {
 
-  describe("RDf2Shacl Syntax") {
-
-    it("should be able to get a shape") {
-      val ex = IRI("http://example.org/")
-      val str =
+  {
+    val ex = IRI("http://example.org/")
+    val str =
         """|@prefix : <http://example.org/>
-                 |@prefix sh: <http://www.w3.org/ns/shacl#>
-                 |
-                 |:S a sh:Shape .
-                 |""".stripMargin
-      val cmp: IO[Schema] = RDFAsJenaModel.fromString(str, "TURTLE").flatMap(_.use(rdf => for {
-        schema <- RDF2Shacl.getShacl(rdf)
-      } yield schema))
-      val s = ex + "S"
-      cmp.attempt.unsafeRunSync match {
-        case Left(e) => fail(s"Failed: $e")
-        case Right(v) => v should containShapes(Set(s))
-      }
-    }
+           |@prefix sh: <http://www.w3.org/ns/shacl#>
+           |
+           |:S a sh:Shape .
+           |""".stripMargin
+    checkContainsShapes("get a shape", str, Set(ex + "S"))
+   }
 
-    it("should be able to get the list of shapes") {
+   {
       val ex = IRI("http://example.org/")
       val str =
         """|@prefix : <http://example.org/>
@@ -42,17 +30,11 @@ class RDF2ShaclTest extends AnyFunSpec with Matchers with TryValues with EitherV
                  |:S a sh:Shape .
                  |:T a sh:Shape .
                  |""".stripMargin
-      val cmp: IO[Schema] = RDFAsJenaModel.fromString(str, "TURTLE").flatMap(_.use(rdf => for {
-        schema <- RDF2Shacl.getShacl(rdf)
-      } yield schema))
       val s = ex + "S"
       val t = ex + "T"
-      cmp.attempt.unsafeRunSync match {
-        case Left(e) => fail(s"Failed: $e")
-        case Right(v) => v should containShapes(Set(s, t))
-      }
+      checkContainsShapes("should be able to get the list of shapes", str, Set(s, t))
     }
-
+/*
     it("should be able to get the list of target nodes") {
       val ex = IRI("http://example.org/")
       val str =
@@ -258,6 +240,17 @@ class RDF2ShaclTest extends AnyFunSpec with Matchers with TryValues with EitherV
 
     }
 
-} 
+} */
+
+  def checkContainsShapes(
+    name: String,
+    shaclStr: String, 
+    expected: Set[RDFNode])(implicit loc: munit.Location): Unit = {
+   test(s"checkContainsShapes: $name") {   
+    RDFAsJenaModel.fromString(shaclStr, "TURTLE").flatMap(_.use(rdf => for {
+        schema <- RDF2Shacl.getShacl(rdf)
+      } yield assertEquals(schema.shapes.map(_.id).toSet, expected)))
+    }
+  }      
 
 }

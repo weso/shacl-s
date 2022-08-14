@@ -1,22 +1,18 @@
 package es.weso.shacl
 
-import org.scalatest._
-import org.scalatest.funspec.AnyFunSpec
-import org.scalatest.matchers.should._
 import es.weso.rdf.nodes._
 import es.weso.rdf.jena.RDFAsJenaModel
-// import es.weso.rdf._
-
+import cats.effect._
+import cats.implicits._
 import util._
 import es.weso.shacl.converter.RDF2Shacl
 import es.weso.shacl.validator.Validator
+import munit.CatsEffectSuite
 
-class ValidatorTest extends AnyFunSpec with Matchers with TryValues with OptionValues
-  with SchemaMatchers {
 
-  describe("Validator target Nodes") {
+class ValidatorTest extends CatsEffectSuite {
 
-    it("should be able to obtain the target nodes to validate") {
+    test("should be able to obtain the target nodes to validate") {
       val ex = IRI("http://example.org/")
       val str = """|@prefix : <http://example.org/>
                  |@prefix sh: <http://www.w3.org/ns/shacl#>
@@ -24,27 +20,20 @@ class ValidatorTest extends AnyFunSpec with Matchers with TryValues with OptionV
                  |:S a sh:Shape; sh:targetNode :x, :y .
                  |:T a sh:Shape; sh:targetNode :z .
                  |""".stripMargin
+
+      val S = ex + "S"
+      val T = ex + "T"
+      val x = ex + "x"
+      val y = ex + "y"
+      val z = ex + "z"
+      val expected = List((y, S), (x, S),(z, T))
       val cmp = RDFAsJenaModel.fromString(str, "TURTLE").flatMap(_.use(rdf => for {
         schema <- RDF2Shacl.getShacl(rdf)
-      } yield (rdf, schema)))
-      cmp.attempt.unsafeRunSync match {
-        case Left(e) => fail(s"Error: $e")
-        case Right((rdf,schema)) => {
-          val S = ex + "S"
-          val T = ex + "T"
-          val x = ex + "x"
-          val y = ex + "y"
-          val z = ex + "z"
-   //       val s = Shape.empty(S).copy(targets = Seq(TargetNode(y), TargetNode(x)))
-   //       val t = Shape.empty(S).copy(targets = Seq(TargetNode(z)))
-          val targetNodes = Validator(schema).targetNodes.map { case (node, shape) => (node, shape.id) }
-          targetNodes.size should be(3)
-          targetNodes should contain only ((x, S), (y, S), (z, T))
-        }
-      }
+      } yield Validator(schema).targetNodes.map { case (node, shape) => (node, shape.id)}))
+      assertIO(cmp, expected)
     }
 
-    it("should be able to validate minCount") {
+    test("should be able to validate minCount") {
       val ex = IRI("http://example.org/")
       val str = """|@prefix : <http://example.org/>
                  |@prefix sh: <http://www.w3.org/ns/shacl#>
@@ -61,15 +50,6 @@ class ValidatorTest extends AnyFunSpec with Matchers with TryValues with OptionV
                  |:good2 :p 1, 2 .
                  |:bad1 :q 1 .
                  |""".stripMargin
-      val cmp = RDFAsJenaModel.fromString(str, "TURTLE").flatMap(_.use(rdf => for {
-        schema <- RDF2Shacl.getShacl(rdf)
-        validator = Validator(schema)
-        checked <- validator.validateAll(rdf)
-      } yield (rdf, schema, validator,checked)))
-      cmp.attempt.unsafeRunSync.fold(
-        e => fail(s"Error: $e"),
-        pair => {
-      val (rdf,schema, validator, checked) = pair
       val S = ex + "S"
       val PS = ex + "PS"
       val x = ex + "x"
@@ -81,32 +61,29 @@ class ValidatorTest extends AnyFunSpec with Matchers with TryValues with OptionV
       val s = Shape.empty(S).copy(
         targets = Seq(TargetNode(x)),
         propertyShapes = psRefs)
-
-      validator.targetNodes should contain only ((x, s))
-      checked.isOK should be(true)
-    }
-    )}
+      val cmp = RDFAsJenaModel.fromString(str, "TURTLE").flatMap(_.use(rdf => for {
+        schema <- RDF2Shacl.getShacl(rdf)
+        validator = Validator(schema)
+        checked <- validator.validateAll(rdf)
+        _ <- assertEquals(validator.targetNodes, List((x,s))).pure[IO]
+        _ <- assertEquals(checked.isOK,true).pure[IO]
+      } yield (rdf, schema, validator,checked)))
   }
+    
 
-  describe("minCount") {
-    it("validates minCount(1) when there is exactly 1") {
+  test("minCount - validates minCount(1) when there is exactly 1") {
       val ex = IRI("http://example.org/")
       val str = s"""|@prefix : $ex
                 |:x :p 1 .
                 |""".stripMargin
-      val eitherRdf = RDFAsJenaModel.fromChars(str, "TURTLE").flatMap(_.use(rdf => {
+      val cmp = RDFAsJenaModel.fromChars(str, "TURTLE").flatMap(_.use(rdf => {
         val validator = Validator(Schema.empty)
         for {
         checked <- validator.validateAll(rdf)
-      } yield (rdf,checked)}))
+      } yield checked.isOK}))
 
-      eitherRdf.attempt.unsafeRunSync().fold(
-        e => fail(s"Error: $e"),
-        pair => {
-          val (rdf,checked) = pair
-          checked.isOK should be(true)
-        })
-    }
+      assertIO(cmp, true)
+  }
 
     /*
  it("validates minCount(1) when there are 2") {
@@ -168,7 +145,6 @@ class ValidatorTest extends AnyFunSpec with Matchers with TryValues with OptionV
     validator.minCount(2).validateAll(x,(rdf,p)).isOK should be(false)
   }
 */
-  }
   /*
  describe("Property constraint"){
    it("validates minCount(1), maxCount(1) when there is exactly 1") {
