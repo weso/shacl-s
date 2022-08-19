@@ -11,7 +11,7 @@ lazy val supportedScalaVersions = List(
 val Java11 = JavaSpec.temurin("11") // "adopt@1.11"  
 
 // Local dependencies
-lazy val srdfVersion           = "0.1.112"
+lazy val srdfVersion           = "0.1.113"
 lazy val utilsVersion          = "0.2.25"
 
 // Dependency versions
@@ -19,7 +19,7 @@ lazy val utilsVersion          = "0.2.25"
 lazy val catsVersion           = "2.8.0"
 lazy val catsEffectVersion     = "3.3.14"
 lazy val circeVersion          = "0.14.2"
-lazy val jenaVersion           = "4.3.2"
+lazy val jenaVersion           = "4.5.0"
 lazy val logbackVersion        = "1.2.11"
 lazy val loggingVersion        = "3.9.4"
 lazy val munitVersion          = "0.7.29"
@@ -66,10 +66,10 @@ lazy val shacl_s = project
   .aggregate(shacl)
   .dependsOn(shacl)
   .settings(
-    siteSubdirName in ScalaUnidoc := "scaladoc/latest",
+    ScalaUnidoc / siteSubdirName  := "scaladoc/latest",
     addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), siteSubdirName in ScalaUnidoc),
     unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(noDocProjects: _*),
-    mappings in makeSite ++= Seq(
+    makeSite / mappings  ++= Seq(
       file("src/assets/favicon.ico") -> "favicon.ico"
     ),
     libraryDependencies ++= Seq(
@@ -81,10 +81,10 @@ lazy val shacl_s = project
       munitEffect % Test
     ),
     testFrameworks += MUnitFramework,
-    cancelable in Global      := true,
+    Global / cancelable      := true,
     fork                      := true,
     crossScalaVersions := supportedScalaVersions,
-    skip in publish := true,
+    publish / skip := true,
     ThisBuild / turbo := true
   )
 
@@ -93,7 +93,7 @@ lazy val shacl = project
   .settings(commonSettings, publishSettings)
   .dependsOn()
   .settings(
-    fork in Test              := true,
+    Test / fork              := true,
     crossScalaVersions := supportedScalaVersions,
     libraryDependencies ++= Seq(
       catsCore,
@@ -145,12 +145,12 @@ lazy val sharedDependencies = Seq(
 )
 
 lazy val packagingSettings = Seq(
-  mainClass in Compile        := Some("es.weso.shacl-s.Main"),
-  mainClass in assembly       := Some("es.weso.shacl-s.Main"),
-  test in assembly            := {},
-  assemblyJarName in assembly := "shacl-s.jar",
-  packageSummary in Linux     := name.value,
-  packageSummary in Windows   := name.value,
+  Compile / mainClass        := Some("es.weso.shacl-s.Main"),
+  assembly / mainClass       := Some("es.weso.shacl-s.Main"),
+  assembly / test            := {},
+  assembly / assemblyJarName := "shacl-s.jar",
+  Linux / packageSummary     := name.value,
+  Windows / packageSummary   := name.value,
   packageDescription          := name.value
 )
 
