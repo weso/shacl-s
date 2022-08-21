@@ -5,9 +5,12 @@ Scala implementation of SHACL.
 This project contains an implementation of
 [SHACL](http://w3c.github.io/data-shapes/shacl/) in Scala.
 
-[![Build Status](https://travis-ci.org/weso/shacl-s.svg?branch=master)](https://travis-ci.org/weso/shacl-s)
+[![Continuous Integration](https://github.com/weso/shacl-s/actions/workflows/ci.yml/badge.svg)](https://github.com/weso/shacl-s/actions/workflows/ci.yml)
+
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/da1290bfb5ea4f4e9dbf4074960d06c3)](https://www.codacy.com/gh/weso/shacl-s?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=weso/shacl-s&amp;utm_campaign=Badge_Grade)
+
 [![codecov](https://codecov.io/gh/weso/shacl-s/branch/master/graph/badge.svg)](https://codecov.io/gh/weso/shacl-s)
+
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/es.weso/shacl_2.13/badge.svg)](https://maven-badges.herokuapp.com/maven-central/es.weso/shacl_2.13)
 
 ## Introduction
@@ -16,7 +19,7 @@ This project contains an implementation of [SHACL](https://www.w3.org/TR/shacl/)
 
 ## Installation and compilation
 
-The project uses [sbt](http://www.scala-sbt.org/) for compilation as well as Java 1.8.
+The project uses [sbt](http://www.scala-sbt.org/) for compilation as well as Java 1.11.
 
 * `sbt test` compiles and runs the tests
 
@@ -59,8 +62,7 @@ which contains the compressed binary code.
 
 ## Implementation details
 
-* The engine is based on Monads using the [cats library](http://typelevel.org/cats/)
-* JSON encoding and decoding uses the Json structure [defined here](https://shexspec.github.io/spec/) and is implemented using [Circe](https://github.com/travisbrown/circe)
+* The engine is based on purely functional concepts using the [cats library](http://typelevel.org/cats/)
 
 ## Compatibility tests
 
