@@ -23,7 +23,7 @@ class ValidateSingleTest extends CatsEffectSuite {
   lazy val ignoreFiles: List[String] = List()
 
   test(s"Validate single $name, folder: $shaclFolder") {
-    val file = getFileFromFolderWithExt(shaclFolder, name, "ttl").unsafeRunSync
+    val file = getFileFromFolderWithExt(shaclFolder, name, "ttl").unsafeRunSync()
     val str = Source.fromFile(file)("UTF-8").mkString
     validate(name, str)
   }
