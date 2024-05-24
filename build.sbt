@@ -23,7 +23,7 @@ lazy val jenaVersion           = "4.5.0"
 lazy val logbackVersion        = "1.2.11"
 lazy val loggingVersion        = "3.9.4"
 lazy val munitVersion          = "0.7.29"
-lazy val munitEffectVersion    = "1.0.7"
+lazy val munitEffectVersion    = "2.0.0"
 
 lazy val typesafeConfigVersion = "1.4.1"
 
@@ -36,7 +36,7 @@ lazy val circeGeneric      = "io.circe"                   %% "circe-generic"    
 lazy val circeParser       = "io.circe"                   %% "circe-parser"        % circeVersion
 lazy val logbackClassic    = "ch.qos.logback"             % "logback-classic"      % logbackVersion
 lazy val munit          = "org.scalameta"     %% "munit"           % munitVersion
-lazy val munitEffect    = "org.typelevel"     %% "munit-cats-effect-3" % munitEffectVersion
+lazy val munitEffect    = "org.typelevel"     %% "munit-cats-effect" % munitEffectVersion
 lazy val MUnitFramework = new TestFramework("munit.Framework")
 
 lazy val srdf              = "es.weso"                    %% "srdf"            % srdfVersion
