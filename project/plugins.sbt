@@ -8,7 +8,7 @@ addSbtPlugin("com.typesafe.sbt"  % "sbt-site"            % "1.4.1")
 //addSbtPlugin("com.typesafe.sbt"  % "sbt-ghpages"         % "0.6.3")
 addSbtPlugin("com.typesafe.sbt"  % "sbt-native-packager" % "1.8.1")
 addSbtPlugin("org.lyranthe.sbt"  % "partial-unification" % "1.1.2")
-addSbtPlugin("org.scalameta"     % "sbt-mdoc"            % "2.2.24")
+addSbtPlugin("org.scalameta"     % "sbt-mdoc"            % "2.6.3")
 addSbtPlugin("org.scoverage"     % "sbt-scoverage"       % "1.8.2")
 
 // addSbtPlugin("com.simplytyped"   % "sbt-antlr4"          % "0.8.2")
