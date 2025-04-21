@@ -116,6 +116,7 @@ lazy val shacl = project
     testFrameworks += MUnitFramework
   )
 
+/*
 lazy val utilsTest = project
   .in(file("modules/utilsTest"))
   .settings(commonSettings, noPublishSettings)
@@ -128,7 +129,7 @@ lazy val utilsTest = project
       catsCore,
       catsKernel
     )
-  )
+  ) */
 
 /* ********************************************************
  ******************** Grouped Settings ********************
