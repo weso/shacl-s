@@ -13,7 +13,7 @@ prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
    sh:property [
      sh:path :q; 
      sh:minInclusive 10 ;
-     sh:maxInclusive 20 
+     sh:maxInclusive 20 ;
    ].
 
 :x :p 12, 18; :q "11"^^xsd:decimal .

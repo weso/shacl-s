@@ -16,9 +16,7 @@ import cats.effect._
 class ShapeValidatorTest extends CatsEffectSuite {
 
   test("Should validate single shape") {
-      // val ex = IRI("http://example.org/")
-      // val s = ex + "S"
-    val str = """|@prefix : <http://example.org/>
+    /*val str = """|@prefix : <http://example.org/>
                  |@prefix sh: <http://www.w3.org/ns/shacl#>
                  |@prefix xsd: <http://www.w3.org/2001/XMLSchema#>
                  |
@@ -27,13 +25,35 @@ class ShapeValidatorTest extends CatsEffectSuite {
                  |   sh:property [sh:path :p; sh:datatype xsd:string; sh:minCount 1] ;
                  |   sh:property [sh:path :q; sh:datatype xsd:integer; sh:minCount 1] .
                  |:x :p "23"; :q 33 .
+                 |""".stripMargin */
+    val str = """|prefix :       <http://example.org/> 
+                 |prefix sh:     <http://www.w3.org/ns/shacl#> 
+                 |prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
+                 |
+                 |# Separation test reach1
+                 |:R a sh:NodeShape ;
+                 |   sh:targetNode :a ;
+                 |   sh:property 
+                 |     [ sh:path :p ;
+                 |       sh:qualifiedValueShape :R ;
+                 |       sh:qualifiedMinCount 1
+                 |     ] .
+                 |
+                 |:a :p :a .
                  |""".stripMargin
-    val cmp = RDFAsJenaModel.fromString(str, "TURTLE").flatMap(_.use(rdf => for {
-        schema <- RDF2Shacl.getShacl(rdf)
-        eitherResult <- Validator.validate(schema, rdf)
-        result <- eitherResult.fold(err => IO.raiseError(new RuntimeException(s"Error validating: ${err.toString}")),IO.pure(_))
-      } yield (result._2)
-    ))
-    cmp .map(result => assertEquals(result, true))
-  } 
+    val cmp = RDFAsJenaModel
+      .fromString(str, "TURTLE")
+      .flatMap(
+        _.use(rdf =>
+          for {
+            schema       <- RDF2Shacl.getShacl(rdf)
+            eitherResult <- Validator.validate(schema, rdf)
+            _            <- IO.println(s"Either result: $eitherResult")
+            result <- eitherResult
+              .fold(err => IO.raiseError(new RuntimeException(s"Error validating: ${err.toString}")), IO.pure(_))
+          } yield (result._2)
+        )
+      )
+    cmp.map(result => assertEquals(result, true))
+  }
 }
