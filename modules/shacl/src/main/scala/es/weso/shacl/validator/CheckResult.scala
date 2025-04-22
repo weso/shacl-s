@@ -3,7 +3,6 @@ package es.weso.shacl.validator
 import cats._
 import cats.implicits._
 
-
 case class CheckResult[E: Show, A: Show, Log: Show](r: (Log, Either[E, A])) {
 
   def result: Either[E, A] = r._2
@@ -34,4 +33,3 @@ case class CheckResult[E: Show, A: Show, Log: Show](r: (Log, Either[E, A])) {
   override def toString = show
 
 }
-

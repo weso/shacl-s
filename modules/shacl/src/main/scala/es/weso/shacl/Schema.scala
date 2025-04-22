@@ -8,12 +8,13 @@ import scala.util.{Either, Left, Right}
 // import sext._
 import cats.effect.IO
 
-case class Schema(pm: PrefixMap,
-                  imports: List[IRI],
-                  entailments: List[IRI],
-                  shapesMap: Map[RefNode, Shape],
-                  propertyGroups: Map[RefNode, PropertyGroup]
-                 ) {
+case class Schema(
+    pm: PrefixMap,
+    imports: List[IRI],
+    entailments: List[IRI],
+    shapesMap: Map[RefNode, Shape],
+    propertyGroups: Map[RefNode, PropertyGroup]
+) {
 
   lazy val shapes: Seq[Shape] =
     shapesMap.toSeq.map(_._2)
@@ -21,25 +22,21 @@ case class Schema(pm: PrefixMap,
   lazy val shapeRefs: Seq[RefNode] =
     shapesMap.keys.toSeq
 
-  /**
-    * Get the shape associated to an IRI
-    * @param node IRI that identifies a shape
+  /** Get the shape associated to an IRI
+    * @param node
+    *   IRI that identifies a shape
     */
   def shape(node: RDFNode): Either[String, Shape] =
     shapesMap.get(RefNode(node)) match {
-      case None => Left(s"Not found $node in Schema")
+      case None        => Left(s"Not found $node in Schema")
       case Some(shape) => Right(shape)
     }
 
   private[shacl] def siblingQualifiedShapes(s: RefNode): List[RefNode] = {
     val parentShapes: List[Shape] =
-      parents(s).
-        map(shapesMap.get(_)).
-        collect { case Some(shape) => shape }
+      parents(s).map(shapesMap.get(_)).collect { case Some(shape) => shape }
     val qualifiedPropertyShapes =
-      parentShapes.
-        flatMap(_.propertyShapes).
-        filter(_ != s)
+      parentShapes.flatMap(_.propertyShapes).filter(_ != s)
     collectQualifiedValueShapes(qualifiedPropertyShapes)
   }
 
@@ -75,8 +72,7 @@ case class Schema(pm: PrefixMap,
     }
   }
 
-  /**
-    * Get the sequence of sh:targetNode declarations
+  /** Get the sequence of sh:targetNode declarations
     */
   def targetNodeShapes: Seq[(RDFNode, Shape)] = {
     val zero: Seq[(RDFNode, Shape)] = Seq()
@@ -87,25 +83,27 @@ case class Schema(pm: PrefixMap,
     shapes.foldLeft(zero)(comb)
   }
 
-  /**
-    * Get the sequence of `sh:targetNode` declarations
-    * @return a list of pairs (n,s) where n is the IRI of a node
-    * and s is the IRI of a shape
+  /** Get the sequence of `sh:targetNode` declarations
+    * @return
+    *   a list of pairs (n,s) where n is the IRI of a node and s is the IRI of a shape
     */
   def targetNodeDeclarations: Seq[(RDFNode, RDFNode)] = {
-    targetNodeShapes.map {case (node, shape) => (node, shape.id) }
+    targetNodeShapes.map { case (node, shape) => (node, shape.id) }
   }
 
-  def serialize(format: String = "TURTLE",
-                base: Option[IRI],
-                builder: RDFBuilder): IO[String] = {
+  def serialize(format: String = "TURTLE", base: Option[IRI], builder: RDFBuilder): IO[String] = {
     format.toUpperCase match {
       /*case "TREE" => {
         IO(s"PrefixMap ${pm.treeString}\nShapes: ${shapes.treeString}")
       }*/
-      case _ => builder.empty.flatMap(_.use(b => for {
-        str <- new Shacl2RDF {}.serialize(this, format, base, b)
-      } yield str))
+      case _ =>
+        builder.empty.flatMap(
+          _.use(b =>
+            for {
+              str <- new Shacl2RDF {}.serialize(this, format, base, b)
+            } yield str
+          )
+        )
     }
   }
 

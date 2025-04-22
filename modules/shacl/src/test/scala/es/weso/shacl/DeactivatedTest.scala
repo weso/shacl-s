@@ -8,8 +8,8 @@ import munit._
 class DeactivatedTest extends CatsEffectSuite {
 
   test("checks a deactivated shape") {
-      val str =
-        s"""|prefix : <http://e/>
+    val str =
+      s"""|prefix : <http://e/>
             |prefix sh:     <http://www.w3.org/ns/shacl#>
             |prefix xsd:    <http://www.w3.org/2001/XMLSchema#>
             |prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#>
@@ -29,12 +29,18 @@ class DeactivatedTest extends CatsEffectSuite {
             |:NotPerson sh:targetNode :carol .
             |  """.stripMargin
 
-      val r = RDFAsJenaModel.fromString(str, "TURTLE", None).flatMap(_.use(rdf => for {
-        schema <- RDF2Shacl.getShacl(rdf)
-        result <- Validator.validate(schema, rdf)
-      } yield result))
+    val r = RDFAsJenaModel
+      .fromString(str, "TURTLE", None)
+      .flatMap(
+        _.use(rdf =>
+          for {
+            schema <- RDF2Shacl.getShacl(rdf)
+            result <- Validator.validate(schema, rdf)
+          } yield result
+        )
+      )
 
-      r.attempt.map(v => assertEquals(v.isRight,true))
+    r.attempt.map(v => assertEquals(v.isRight, true))
 
- } 
+  }
 }

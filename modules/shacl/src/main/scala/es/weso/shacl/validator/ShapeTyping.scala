@@ -10,20 +10,20 @@ case class ShapeTyping(t: Typing[RDFNode, Shape, AbstractResult, String]) {
 
   def getNodes: Seq[RDFNode] = t.getKeys.toSeq
 
-  def getMap : Map[RDFNode, scala.collection.Map[Shape, TypingResult[AbstractResult, String]]] =
+  def getMap: Map[RDFNode, scala.collection.Map[Shape, TypingResult[AbstractResult, String]]] =
     t.getMap.toMap
 
   def hasType(node: RDFNode, shape: Shape): Boolean =
-    t.hasType(node,shape)
+    t.hasType(node, shape)
 
   def addType(node: RDFNode, shape: Shape): ShapeTyping =
-    ShapeTyping(t.addType(node,shape))
+    ShapeTyping(t.addType(node, shape))
 
   def addEvidence(node: RDFNode, shape: Shape, msg: String): ShapeTyping =
     ShapeTyping(t.addEvidence(node, shape, msg))
 
   def addNotEvidence(node: RDFNode, shape: Shape, e: AbstractResult): ShapeTyping =
-    ShapeTyping(t.addNotEvidence(node,shape,e))
+    ShapeTyping(t.addNotEvidence(node, shape, e))
 
   def getFailedValues(node: RDFNode): Set[Shape] =
     t.getFailedValues(node).toSet
@@ -36,9 +36,9 @@ case class ShapeTyping(t: Typing[RDFNode, Shape, AbstractResult, String]) {
       conforms = t.allOk,
       results = {
         val rs: Seq[(RDFNode, Shape, TypingResult[AbstractResult, String])] =
-          t.getMap.toSeq.map {
-            case (node,valueMap) => valueMap.toSeq.map {
-              case (shape, result) => (node, shape, result)
+          t.getMap.toSeq.map { case (node, valueMap) =>
+            valueMap.toSeq.map { case (shape, result) =>
+              (node, shape, result)
             }
           }.flatten
         rs.map(_._3.getErrors.toList.flatten).flatten
@@ -60,10 +60,13 @@ object ShapeTyping {
   implicit def showShapeTyping: Show[ShapeTyping] = new Show[ShapeTyping] {
     override def show(st: ShapeTyping): String = {
       val sb: StringBuilder = new StringBuilder
-      st.getMap.toList.map{ case (node,shapeMap) => {
-         shapeMap.toList.map{ case (shape, typingResult) => {
-           sb.append(s"${node.show}-${shape.showId} = ${showTypingResult(typingResult)}\n")
-         }}
+      st.getMap.toList.map {
+        case (node, shapeMap) => {
+          shapeMap.toList.map {
+            case (shape, typingResult) => {
+              sb.append(s"${node.show}-${shape.showId} = ${showTypingResult(typingResult)}\n")
+            }
+          }
         }
       }
       sb.toString
@@ -84,4 +87,3 @@ object ShapeTyping {
   }
 
 }
-

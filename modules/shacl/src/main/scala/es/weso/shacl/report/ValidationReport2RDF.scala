@@ -17,11 +17,11 @@ class ValidationReport2RDF extends RDFSaver with LazyLogging {
   }
 
   private def validationReport(vr: ValidationReport): RDFSaver[Unit] = for {
-    _ <- addPrefix("sh", sh)
+    _    <- addPrefix("sh", sh)
     node <- createBNode()
-    _ <- addTriple(node, `rdf:type`, `sh:ValidationReport`)
-    _ <- addTriple(node, `sh:conforms`, BooleanLiteral(vr.conforms))
-    _ <- results(node, vr.results)
+    _    <- addTriple(node, `rdf:type`, `sh:ValidationReport`)
+    _    <- addTriple(node, `sh:conforms`, BooleanLiteral(vr.conforms))
+    _    <- results(node, vr.results)
   } yield ()
 
   private def results(id: RDFNode, ts: Seq[AbstractResult]): RDFSaver[Unit] =
@@ -49,14 +49,15 @@ class ValidationReport2RDF extends RDFSaver with LazyLogging {
             } yield ()
         }
       } yield ()
-    case mr: MsgError => for {
-     node <- createBNode()
-     _ <- addTriple(node, `sh:resultMessage`, StringLiteral(mr.msg))
-    } yield ()
+    case mr: MsgError =>
+      for {
+        node <- createBNode()
+        _    <- addTriple(node, `sh:resultMessage`, StringLiteral(mr.msg))
+      } yield ()
   }
 
   private def message(node: RDFNode)(msg: LiteralValue): RDFSaver[Unit] = for {
-    _ <- addTriple(node, `sh:message`,msg.literal)
+    _ <- addTriple(node, `sh:message`, msg.literal)
   } yield ()
 
 }
@@ -64,6 +65,6 @@ class ValidationReport2RDF extends RDFSaver with LazyLogging {
 object ValidationReport2RDF {
 
   def run(vr: ValidationReport, builder: RDFBuilder): IO[RDFBuilder] =
-    new ValidationReport2RDF().toRDF(vr,builder)
+    new ValidationReport2RDF().toRDF(vr, builder)
 
 }

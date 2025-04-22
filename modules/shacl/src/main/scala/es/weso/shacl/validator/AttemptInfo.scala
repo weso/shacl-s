@@ -5,11 +5,7 @@ import es.weso.rdf.nodes._
 import es.weso.shacl.report.Severity
 import es.weso.shacl.{MessageMap, RefNode}
 
-case class AttemptInfo(node: RDFNode,
-                       shape: RefNode,
-                       messageMap: MessageMap,
-                       severity: Severity
-                      ) {
+case class AttemptInfo(node: RDFNode, shape: RefNode, messageMap: MessageMap, severity: Severity) {
 
   override def toString = AttemptInfo.nodeShapeShow.show(this)
 

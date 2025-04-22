@@ -13,10 +13,11 @@ object showShacl {
 
   implicit def showError: Show[AbstractResult] = new Show[AbstractResult] {
     def show(ve: AbstractResult): String =
-     ve match {
-      case vr: ValidationResult => s"Violation Error(${vr.sourceConstraintComponent}). Node(${vr.focusNode}) ${vr.message.mkString(",")}"
-      case m: MsgError => s"Error: ${m.msg}"
-     }
+      ve match {
+        case vr: ValidationResult =>
+          s"Violation Error(${vr.sourceConstraintComponent}). Node(${vr.focusNode}) ${vr.message.mkString(",")}"
+        case m: MsgError => s"Error: ${m.msg}"
+      }
   }
 
   implicit def showRDFNode: Show[RDFNode] = new Show[RDFNode] {

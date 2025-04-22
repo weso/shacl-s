@@ -87,10 +87,10 @@ case class In(list: List[Value]) extends Component {
 
 // TODO: Change representation to include optional parent shape
 case class QualifiedValueShape(
-                                shape: RefNode,
-                                qualifiedMinCount: Option[Int],
-                                qualifiedMaxCount: Option[Int],
-                                qualifiedValueShapesDisjoint: Option[Boolean]) extends Component {
+    shape: RefNode,
+    qualifiedMinCount: Option[Int],
+    qualifiedMaxCount: Option[Int],
+    qualifiedValueShapesDisjoint: Option[Boolean]
+) extends Component {
   override val name: String = "qualifiedValueShape"
 }
-

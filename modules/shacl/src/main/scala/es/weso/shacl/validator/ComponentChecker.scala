@@ -1,5 +1,3 @@
 package es.weso.shacl.validator
 
-object ComponentChecker {
-
-}
+object ComponentChecker {}
