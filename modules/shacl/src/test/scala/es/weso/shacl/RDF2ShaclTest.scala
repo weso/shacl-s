@@ -13,28 +13,28 @@ class RDF2ShaclTest extends CatsEffectSuite {
   {
     val ex = IRI("http://example.org/")
     val str =
-        """|@prefix : <http://example.org/>
+      """|@prefix : <http://example.org/>
            |@prefix sh: <http://www.w3.org/ns/shacl#>
            |
            |:S a sh:Shape .
            |""".stripMargin
     checkContainsShapes("get a shape", str, Set(ex + "S"))
-   }
+  }
 
-   {
-      val ex = IRI("http://example.org/")
-      val str =
-        """|@prefix : <http://example.org/>
+  {
+    val ex = IRI("http://example.org/")
+    val str =
+      """|@prefix : <http://example.org/>
                  |@prefix sh: <http://www.w3.org/ns/shacl#>
                  |
                  |:S a sh:Shape .
                  |:T a sh:Shape .
                  |""".stripMargin
-      val s = ex + "S"
-      val t = ex + "T"
-      checkContainsShapes("should be able to get the list of shapes", str, Set(s, t))
-    }
-/*
+    val s = ex + "S"
+    val t = ex + "T"
+    checkContainsShapes("should be able to get the list of shapes", str, Set(s, t))
+  }
+  /*
     it("should be able to get the list of target nodes") {
       val ex = IRI("http://example.org/")
       val str =
@@ -242,15 +242,20 @@ class RDF2ShaclTest extends CatsEffectSuite {
 
 } */
 
-  def checkContainsShapes(
-    name: String,
-    shaclStr: String, 
-    expected: Set[RDFNode])(implicit loc: munit.Location): Unit = {
-   test(s"checkContainsShapes: $name") {   
-    RDFAsJenaModel.fromString(shaclStr, "TURTLE").flatMap(_.use(rdf => for {
-        schema <- RDF2Shacl.getShacl(rdf)
-      } yield assertEquals(schema.shapes.map(_.id).toSet, expected)))
+  def checkContainsShapes(name: String, shaclStr: String, expected: Set[RDFNode])(implicit
+      loc: munit.Location
+  ): Unit = {
+    test(s"checkContainsShapes: $name") {
+      RDFAsJenaModel
+        .fromString(shaclStr, "TURTLE")
+        .flatMap(
+          _.use(rdf =>
+            for {
+              schema <- RDF2Shacl.getShacl(rdf)
+            } yield assertEquals(schema.shapes.map(_.id).toSet, expected)
+          )
+        )
     }
-  }      
+  }
 
 }

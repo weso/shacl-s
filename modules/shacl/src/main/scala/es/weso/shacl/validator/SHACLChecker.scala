@@ -14,22 +14,22 @@ import fs2.Stream
 object SHACLChecker extends CheckerCats with LazyLogging {
 
   type Config = RDFReader
-  type Env = ShapeTyping
-  type Err = AbstractResult
-  type Log = List[Evidence]
+  type Env    = ShapeTyping
+  type Err    = AbstractResult
+  type Log    = List[Evidence]
   implicit val logMonoid: Monoid[Log] = new Monoid[Log] {
     def combine(l1: Log, l2: Log): Log = l1 ++ l2
-    def empty: Log = List()
+    def empty: Log                     = List()
   }
   implicit val logShow: Show[Log] = new Show[Log] {
     def show(l: Log): String = l.map(_.show).mkString("\n")
   }
 
   private def combineEnv(t1: Env, t2: Env): Env =
-    Monoid[Env].combine(t1,t2)
+    Monoid[Env].combine(t1, t2)
 
   private[validator] def combineResults(x: Result, y: Result): Result = {
-    val z = combineEnv(x._1,y._1)
+    val z = combineEnv(x._1, y._1)
     (z, x._2 && y._2)
   }
 
@@ -40,18 +40,17 @@ object SHACLChecker extends CheckerCats with LazyLogging {
 
   private[validator] def done: CheckTyping = for {
     t <- getTyping
-  } yield (t,true)
+  } yield (t, true)
 
   private[validator] def fail(msg: String): CheckTyping = {
     logger.debug(s"Failed: $msg")
     for {
       t <- getTyping
-    } yield (t,false)
+    } yield (t, false)
   }
 
-
   private[validator] def combineResultSeq(ts: Seq[Result]): CheckTyping = {
-    val zero: (ShapeTyping,Boolean) = (ShapeTyping.empty, true)
+    val zero: (ShapeTyping, Boolean) = (ShapeTyping.empty, true)
     def cmb(x: Result, y: Result): Result = {
       (x._1 |+| y._1, x._2 && y._2)
     }
@@ -69,7 +68,6 @@ object SHACLChecker extends CheckerCats with LazyLogging {
   private[validator] def addLogMsg(msg: String): Check[Unit] =
     addLog(List(MsgEvidence(msg)))
 
-
   private[validator] def runLocalTyping[A](c: Check[A], f: ShapeTyping => ShapeTyping): Check[A] =
     local(f)(c)
 
@@ -80,11 +78,11 @@ object SHACLChecker extends CheckerCats with LazyLogging {
 
   private[validator] def checkSequenceTyping(ls: List[CheckTyping]): CheckTyping = for {
     t <- getTyping
-    r <- checkSequenceFlag(ls,t)
+    r <- checkSequenceFlag(ls, t)
   } yield r
 
- def fromStreamIO[A](ls: Stream[IO,A]): Check[LazyList[A]] = {
-   fromIO(ls.compile.to(LazyList))
- }
+  def fromStreamIO[A](ls: Stream[IO, A]): Check[LazyList[A]] = {
+    fromIO(ls.compile.to(LazyList))
+  }
 
 }

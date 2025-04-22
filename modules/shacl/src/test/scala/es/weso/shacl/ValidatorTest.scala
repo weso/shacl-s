@@ -9,33 +9,38 @@ import es.weso.shacl.converter.RDF2Shacl
 import es.weso.shacl.validator.Validator
 import munit.CatsEffectSuite
 
-
 class ValidatorTest extends CatsEffectSuite {
 
-    test("should be able to obtain the target nodes to validate") {
-      val ex = IRI("http://example.org/")
-      val str = """|@prefix : <http://example.org/>
+  test("should be able to obtain the target nodes to validate") {
+    val ex = IRI("http://example.org/")
+    val str = """|@prefix : <http://example.org/>
                  |@prefix sh: <http://www.w3.org/ns/shacl#>
                  |
                  |:S a sh:Shape; sh:targetNode :x, :y .
                  |:T a sh:Shape; sh:targetNode :z .
                  |""".stripMargin
 
-      val S = ex + "S"
-      val T = ex + "T"
-      val x = ex + "x"
-      val y = ex + "y"
-      val z = ex + "z"
-      val expected = List((y, S), (x, S),(z, T))
-      val cmp = RDFAsJenaModel.fromString(str, "TURTLE").flatMap(_.use(rdf => for {
-        schema <- RDF2Shacl.getShacl(rdf)
-      } yield Validator(schema).targetNodes.map { case (node, shape) => (node, shape.id)}))
-      assertIO(cmp, expected)
-    }
+    val S        = ex + "S"
+    val T        = ex + "T"
+    val x        = ex + "x"
+    val y        = ex + "y"
+    val z        = ex + "z"
+    val expected = List((y, S), (x, S), (z, T))
+    val cmp = RDFAsJenaModel
+      .fromString(str, "TURTLE")
+      .flatMap(
+        _.use(rdf =>
+          for {
+            schema <- RDF2Shacl.getShacl(rdf)
+          } yield Validator(schema).targetNodes.map { case (node, shape) => (node, shape.id) }
+        )
+      )
+    assertIO(cmp, expected)
+  }
 
-    test("should be able to validate minCount") {
-      val ex = IRI("http://example.org/")
-      val str = """|@prefix : <http://example.org/>
+  test("should be able to validate minCount") {
+    val ex = IRI("http://example.org/")
+    val str = """|@prefix : <http://example.org/>
                  |@prefix sh: <http://www.w3.org/ns/shacl#>
                  |
                  |:S a sh:NodeShape;
@@ -50,42 +55,48 @@ class ValidatorTest extends CatsEffectSuite {
                  |:good2 :p 1, 2 .
                  |:bad1 :q 1 .
                  |""".stripMargin
-      val S = ex + "S"
-      val PS = ex + "PS"
-      val x = ex + "x"
-     // val good1 = ex + "good1"
-     // val good2 = ex + "good2"
-     // val bad1 = ex + "bad1"
-     // val ps = Shape.emptyPropertyShape(PS, PredicatePath(p)).copy(components = List(MinCount(1)))
-      val psRefs = Seq(RefNode(PS))
-      val s = Shape.empty(S).copy(
-        targets = Seq(TargetNode(x)),
-        propertyShapes = psRefs)
-      val cmp = RDFAsJenaModel.fromString(str, "TURTLE").flatMap(_.use(rdf => for {
-        schema <- RDF2Shacl.getShacl(rdf)
-        validator = Validator(schema)
-        checked <- validator.validateAll(rdf)
-        _ <- assertEquals(validator.targetNodes, List((x,s))).pure[IO]
-        _ <- assertEquals(checked.isOK,true).pure[IO]
-      } yield (rdf, schema, validator,checked)))
+    val S  = ex + "S"
+    val PS = ex + "PS"
+    val x  = ex + "x"
+    // val good1 = ex + "good1"
+    // val good2 = ex + "good2"
+    // val bad1 = ex + "bad1"
+    // val ps = Shape.emptyPropertyShape(PS, PredicatePath(p)).copy(components = List(MinCount(1)))
+    val psRefs = Seq(RefNode(PS))
+    val s      = Shape.empty(S).copy(targets = Seq(TargetNode(x)), propertyShapes = psRefs)
+    val cmp = RDFAsJenaModel
+      .fromString(str, "TURTLE")
+      .flatMap(
+        _.use(rdf =>
+          for {
+            schema <- RDF2Shacl.getShacl(rdf)
+            validator = Validator(schema)
+            checked <- validator.validateAll(rdf)
+            _       <- assertEquals(validator.targetNodes, List((x, s))).pure[IO]
+            _       <- assertEquals(checked.isOK, true).pure[IO]
+          } yield (rdf, schema, validator, checked)
+        )
+      )
   }
-    
 
   test("minCount - validates minCount(1) when there is exactly 1") {
-      val ex = IRI("http://example.org/")
-      val str = s"""|@prefix : $ex
+    val ex = IRI("http://example.org/")
+    val str = s"""|@prefix : $ex
                 |:x :p 1 .
                 |""".stripMargin
-      val cmp = RDFAsJenaModel.fromChars(str, "TURTLE").flatMap(_.use(rdf => {
+    val cmp = RDFAsJenaModel
+      .fromChars(str, "TURTLE")
+      .flatMap(_.use(rdf => {
         val validator = Validator(Schema.empty)
         for {
-        checked <- validator.validateAll(rdf)
-      } yield checked.isOK}))
+          checked <- validator.validateAll(rdf)
+        } yield checked.isOK
+      }))
 
-      assertIO(cmp, true)
+    assertIO(cmp, true)
   }
 
-    /*
+  /*
  it("validates minCount(1) when there are 2") {
   val ex = IRI("http://example.org/")
   val str = s"""|@prefix : $ex
@@ -144,7 +155,7 @@ class ValidatorTest extends CatsEffectSuite {
     val validator = Validator(Schema.empty)
     validator.minCount(2).validateAll(x,(rdf,p)).isOK should be(false)
   }
-*/
+   */
   /*
  describe("Property constraint"){
    it("validates minCount(1), maxCount(1) when there is exactly 1") {

@@ -27,9 +27,9 @@ sealed abstract class Shape {
 
   def showId: String =
     id match {
-      case iri: IRI => iri.str
+      case iri: IRI     => iri.str
       case bnode: BNode => bnode.toString
-      case l: Literal => l.getLexicalForm
+      case l: Literal   => l.getLexicalForm
     }
 
   def targetNodes: Seq[RDFNode] =
@@ -45,8 +45,8 @@ sealed abstract class Shape {
     targets.map(_.toTargetObjectsOf).flatten.map(_.pred)
 
   def componentShapes: Seq[RefNode] = {
-    components.collect {
-      case NodeComponent(sref) => sref
+    components.collect { case NodeComponent(sref) =>
+      sref
 //      case Or(srefs) => srefs
 //      case And(srefs) => srefs
 //      case Not(sref) => List(sref) // TODO: Not sure if this should be included...
@@ -55,25 +55,24 @@ sealed abstract class Shape {
 
   def addPropertyShapes(ps: Seq[RefNode]): Shape
 
-
 }
 
 case class NodeShape(
-                      id: RDFNode,
-                      components: List[Component],
-                      targets: Seq[Target],
-                      propertyShapes: Seq[RefNode],
-                      closed: Boolean,
-                      ignoredProperties: List[IRI],
-                      deactivated: Boolean,
-                      message: MessageMap,
-                      severity: Option[Severity],
-                      name: MessageMap,
-                      description: MessageMap,
-                      order: Option[DecimalLiteral],
-                      group: Option[RefNode],
-                      sourceIRI: Option[IRI]
-                    ) extends Shape {
+    id: RDFNode,
+    components: List[Component],
+    targets: Seq[Target],
+    propertyShapes: Seq[RefNode],
+    closed: Boolean,
+    ignoredProperties: List[IRI],
+    deactivated: Boolean,
+    message: MessageMap,
+    severity: Option[Severity],
+    name: MessageMap,
+    description: MessageMap,
+    order: Option[DecimalLiteral],
+    group: Option[RefNode],
+    sourceIRI: Option[IRI]
+) extends Shape {
 
   def isPropertyConstraint = false
 
@@ -83,23 +82,23 @@ case class NodeShape(
 }
 
 case class PropertyShape(
-                          id: RDFNode,
-                          path: SHACLPath,
-                          components: List[Component],
-                          targets: Seq[Target],
-                          propertyShapes: Seq[RefNode],
-                          closed: Boolean,
-                          ignoredProperties: List[IRI],
-                          deactivated: Boolean,
-                          message: MessageMap,
-                          severity: Option[Severity],
-                          name: MessageMap,
-                          description: MessageMap,
-                          order: Option[DecimalLiteral],
-                          group: Option[RefNode],
-                          sourceIRI: Option[IRI],
-                          annotations: List[(IRI,RDFNode)]
-                        ) extends Shape {
+    id: RDFNode,
+    path: SHACLPath,
+    components: List[Component],
+    targets: Seq[Target],
+    propertyShapes: Seq[RefNode],
+    closed: Boolean,
+    ignoredProperties: List[IRI],
+    deactivated: Boolean,
+    message: MessageMap,
+    severity: Option[Severity],
+    name: MessageMap,
+    description: MessageMap,
+    order: Option[DecimalLiteral],
+    group: Option[RefNode],
+    sourceIRI: Option[IRI],
+    annotations: List[(IRI, RDFNode)]
+) extends Shape {
 
   def isPropertyConstraint = true
 
@@ -129,9 +128,7 @@ object Shape {
     sourceIRI = None
   )
 
-  def emptyPropertyShape(
-                          id: RDFNode,
-                          path: SHACLPath): PropertyShape = PropertyShape(
+  def emptyPropertyShape(id: RDFNode, path: SHACLPath): PropertyShape = PropertyShape(
     id = id,
     path = path,
     components = List(),
