@@ -8,7 +8,7 @@ addSbtPlugin("com.github.sbt" % "sbt-site-asciidoctor" % "1.5.0")
 //addSbtPlugin("com.typesafe.sbt"  % "sbt-ghpages"         % "0.6.3")
 addSbtPlugin("com.github.sbt"   % "sbt-native-packager" % "1.11.1")
 addSbtPlugin("org.lyranthe.sbt" % "partial-unification" % "1.1.2")
-addSbtPlugin("org.scalameta"    % "sbt-mdoc"            % "2.2.24")
+addSbtPlugin("org.scalameta"    % "sbt-mdoc"            % "2.7.1")
 addSbtPlugin("org.scoverage"    % "sbt-scoverage"       % "2.3.1")
 
 // addSbtPlugin("com.simplytyped"   % "sbt-antlr4"          % "0.8.2")
